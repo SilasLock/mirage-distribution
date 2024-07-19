@@ -6,12 +6,15 @@ In this repository, we're going to be simulating how prices change the mirage di
 Running the simulation is performed by navigating to the project directory in a terminal and running the command
 
 ```
-julia --project=MirageSimulation init.jl
+julia init.jl
 ```
 
 To do this, you'll first need to install Julia. Go to the [Julia downloads page](https://julialang.org/downloads/#current_stable_release) and select the download type corresponding to your operating system. During the installation process, select the option to add Julia to the path. Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
 
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
+
+> [!TIP]
+> We've carefully written the init.jl script so that you can run it from any directory. If you wanted to, you could use `julia mirage-distribution/init.jl` from the parent directory of this GitHub repository and it would still work.
 
 
 ## The Model
