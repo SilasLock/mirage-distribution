@@ -12,3 +12,7 @@ Julia simulation-script.jl
 To do this, you'll first need to install Julia. Go to the [Julia downloads page](https://julialang.org/downloads/#current_stable_release) and select the download type corresponding to your operating system. During the installation process, select the option to add Julia to the path. Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
 
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
+
+
+## The Model
+Inside `simulation-script.jl`, you'll find two different functions for the CDF of the value distribution: the Kumaraswamy distribution and the beta distribution. These both have a continuous support on the interval $[0, 1]$ and are vaguely bell-curve-shaped, making them ideal candidates for a flexible family of agent value distributions.
