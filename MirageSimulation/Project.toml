@@ -1,0 +1,7 @@
+name = "MirageSimulation"
+uuid = "a9f35631-1ab6-40c9-9f1d-7976bdb4c6f8"
+authors = ["SilasLock <matthew@overthelake.com>"]
+version = "0.1.0"
+
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
