@@ -20,16 +20,20 @@ function betaCDF(x::Float64, alpha::Float64, beta::Float64)
 end
 
 function startSimulation()
-	println("Simulation goes here.")
-	println(0.5, 3, 6)
+	println("Simulation code will need to be placed here.")
+	println("For now, here's two outputs of our CDFs with a totally arbitrary parameterization I gave them.")
+	print("Kumaraswamy distribution: ")
+	println(kumaraswamyCDF(0.5, 3.0, 6.0))
+	print("Beta distribution: ")
 	println(betaCDF(0.6, 2.0, 3.0))
+	print("Are these numbers probabilities between 0 and 1? Then great!")
+	println(" We've already accomplished the first step of the project.")
 end
 
 
 function main()
 	println("Simulator Started!")
 	startSimulation()
-	# testQueue = DataStructures.BinaryHeap{Event, <}()
 end
 
 end # module MirageSimulation
