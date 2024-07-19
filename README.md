@@ -14,7 +14,7 @@ To do this, you'll first need to install Julia. Go to the [Julia downloads page]
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
 
 > [!TIP]
-> We've carefully written the init.jl script so that you can run it from any directory. If you wanted to, you could use `julia mirage-distribution/init.jl` from the parent directory of this GitHub repository and it would still work.
+> We've carefully written the `init.jl` script so that you can run it from any directory. If you wanted to, you could use `julia mirage-distribution/init.jl` from the parent directory of this GitHub repository and it would still work.
 
 
 ## The Model
