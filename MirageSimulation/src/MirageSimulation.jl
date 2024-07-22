@@ -19,6 +19,13 @@ function betaCDF(x::Float64, alpha::Float64, beta::Float64)
     return cdf(Beta(alpha, beta), x)
 end
 
+function dashboard(x::Float64)
+	# This is where the dashboard code would go.
+	@assert x >= 0
+	@assert x <= 1
+	return x
+end
+
 function startSimulation()
 	println("Simulation code will need to be placed here.")
 	println("For now, here's two outputs of our CDFs with a totally arbitrary parameterization I gave them.")
