@@ -53,19 +53,22 @@ We can write the local downward/upward IC constraints in this model as
 Combining these two constraints into one proposition and rearranging so as to isolate the pricing rule, we can write
 
 ```math
+\displaylines{
 \forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i - 1}^{\uparrow} \in R_{i - 1},
 \\ v_{i}^{\downarrow} [x(b_{i}) - x(b_{i - 1})] \geq p(b_{i}) - p(b_{i - 1}) \geq v_{i - 1}^{\uparrow} [x(b_{i}) - x(b_{i - 1})] \text{.}
+}
 ```
 
-Then, summing these together from $i = 1$ to $i = k$ and applying summation by parts, we obtain
+Observe that the upper and lower constraints are the tightest when $v_{i}^{\downarrow}$ is as small as possible, and when $v_{i}^{\uparrow}$ is as large as possible. Then, summing the constraints together from $i = 1$ to $i = k$ and applying summation by parts, we obtain
 
 ```math
 \displaylines{
-\forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i - 1}^{\uparrow} \in R_{i - 1},
+\forall i \in \{ 1, ..., n \}, \forall v_{1}^{\downarrow} \in R_{1}, ..., v_{k}^{\downarrow} \in R_{k}, \forall v_{0}^{\uparrow} \in R_{0}, ..., v_{k - 1}^{\uparrow} \in R_{k - 1}
 \\ v_{k}^{\downarrow} x(b_{k}) - v_{1}^{\downarrow} x(b_{0}) - \sum_{i = 1}^{k - 1} x(b_{i}) [v_{i + 1}^{\downarrow} - v_{i}^{\downarrow}] \geq p(b_{k}) - p(b_{0}) \geq v_{k - 1}^{\uparrow} x(b_{k}) - v_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 2} x(b_{i + 1}) [v_{i + 1}^{\uparrow} - v_{i}^{\uparrow}]
 }
 ```
 
+A pricing rule that satisfies all of these constraints must also do so for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s. Conversely, a pricing rule that satisfies these constraints for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s will also satisfy them for any $v_{i}^{\downarrow}$s and $v_{i}^{\uparrow}$s.
 
 
 > [!NOTE]  
