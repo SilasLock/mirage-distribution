@@ -63,7 +63,7 @@ Observe that the upper and lower constraints are the tightest when $v_{i}^{\down
 
 ```math
 \displaylines{
-\forall i \in \{ 1, ..., n \}, \forall v_{1}^{\downarrow} \in R_{1}, ..., v_{k}^{\downarrow} \in R_{k}, \forall v_{0}^{\uparrow} \in R_{0}, ..., v_{k - 1}^{\uparrow} \in R_{k - 1},
+\forall k \in \{ 1, ..., n \}, \forall v_{1}^{\downarrow} \in R_{1}, ..., v_{k}^{\downarrow} \in R_{k}, \forall v_{0}^{\uparrow} \in R_{0}, ..., v_{k - 1}^{\uparrow} \in R_{k - 1},
 \\ v_{k}^{\downarrow} x(b_{k}) - v_{1}^{\downarrow} x(b_{0}) - \sum_{i = 1}^{k - 1} x(b_{i}) [v_{i + 1}^{\downarrow} - v_{i}^{\downarrow}] \geq p(b_{k}) - p(b_{0}) \geq v_{k - 1}^{\uparrow} x(b_{k}) - v_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 2} x(b_{i + 1}) [v_{i + 1}^{\uparrow} - v_{i}^{\uparrow}]
 }
 ```
@@ -78,12 +78,12 @@ since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R
 
 ```math
 \displaylines{
-\forall i \in \{ 1, ..., n \},
+\forall k \in \{ 1, ..., n \},
 \\ p(b_{k}) - p(b_{0}) = \partial_{k}^{\uparrow} x(b_{k}) - \partial_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [\partial_{i + 1}^{\uparrow} - \partial_{i}^{\uparrow}]
 }
 ```
 
-This motivates a very natural discretization of the value space. If all the probability mass in value region $R_{i}$ were reallocated to the location $\sup R_{i}$ and $\sup R_{i} \in R_{i}$, observe that the above expression for the pricing rule would not change. Thus, we have found a dashboard and pricing rule that are incentive compatible in a discretized bid space but continuous value space, that maintain the same functional form if the value space were then discretized to only place nonzero probabilities on each $\sup R_{i}$.
+This motivates a very natural discretization of the value space. If all the probability mass in value region $R_{i}$ were reallocated to the location $\sup R_{i}$ and $\sup R_{i} \in R_{i}$, observe that the above expression for the pricing rule would not change. Thus, we have found a dashboard and pricing rule that are incentive compatible in a discretized bid space yet continuous value space, which maintain the same functional form if the value space were then discretized to only place nonzero probabilities on each $\sup R_{i}$.
 
 The simplest way to do this is to split the unit interval of possible values $[0, 1]$ into $n$ half-open regions, such that for all $i \in [n]$ we have the region
 ```math
@@ -108,12 +108,14 @@ Observe that including the existence of a zero type in this discretization ensur
 
 ```math
 \displaylines{
-\forall i \in \{ 1, ..., n \},
-\\ p(b_{k}) = b_{k} x(b_{k}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [b_{i + 1} - b_{i}]
+\forall k \in \{ 1, ..., n \},
+\\ p(b_{k}) = b_{k} x(b_{k}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [b_{i + 1} - b_{i}] \text{.}
 }
 ```
 
-This also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
+Note that the above formula for the pricing rule also happens to hold for when $k = 0$.
+
+This particular discretization of the type space also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
 
 ```math
 \mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i) = \frac{\sum\limits_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum\limits_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
