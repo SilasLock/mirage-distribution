@@ -9,7 +9,9 @@ Running the simulation is performed by navigating to the project directory in a 
 julia init.jl
 ```
 
-To do this, you'll first need to install Julia. Go to the [Julia downloads page](https://julialang.org/downloads/#current_stable_release) and select the download type corresponding to your operating system. During the installation process, select the option to add Julia to the path. Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
+To do this, you'll first need to install Julia. Go to the [Julia downloads page](https://julialang.org/downloads/#current_stable_release) and select the download type corresponding to your operating system. During the installation process, select the option to add Julia to the path. *If you do not select the option to add Julia to the path during the installation process, you will have to do so manually afterwards.*
+
+Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
 
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
 
