@@ -74,7 +74,7 @@ A pricing rule that satisfies all of these constraints must also do so for the s
 v_{i}^{\uparrow}, v_{i + 1}^{\downarrow} \rightarrow \sup R_{i}
 ```
 
-since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R_{i}  = \inf R_{i + 1}$. It turns out that this *exactly pins down the pricing rule up to an additive constant$. Using $\partial_{i}^{\uparrow} \triangleq \sup R_{i}$, we can write this expression for the pricing rule as
+since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R_{i}  = \inf R_{i + 1}$. It turns out that this *exactly pins down the pricing rule up to an additive constant*. Using $\partial_{i}^{\uparrow} \triangleq \sup R_{i}$, we can write this expression for the pricing rule as
 
 ```math
 \displaylines{
@@ -104,11 +104,20 @@ b_{0} = \sup \{ 0 \} = 0
 
 and say that in our discretized type space, an agent has probability of having value $b_{i}$ equal to $F(i / n) - F((i - 1) / n)$, where $F$ is the CDF of our original continuous value distribution.
 
-This allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
+Observe that including the existence of a zero type in this discretization ensures that $b_{0} x(b_{0}) - p(b_{0}) \leq 0$, and that this would not necessarily be the case if $b_{0} \neq 0$. Additionally, note that the IR constraint means that we must have $b_{0} x(b_{0}) - p(b_{0}) \geq 0$ in this discretized model. Thus, we know $b_{0} x(b_{0}) - p(b_{0}) = 0$, and this further simplifies our pricing rule to be
 
 ```math
 \displaylines{
-\mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) = \frac{\sum_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
+\forall i \in \{ 1, ..., n \},
+\\ p(b_{k}) = \b_{k} x(b_{k}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [\b_{i + 1} - \b_{i}]
+}
+```
+
+This also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
+
+```math
+\displaylines{
+\mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) = \frac{\sum\limits_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum\limits_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
 }
 ```
 
