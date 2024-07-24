@@ -68,7 +68,7 @@ Observe that the upper and lower constraints are the tightest when $v_{i}^{\down
 }
 ```
 
-A pricing rule that satisfies all of these constraints must also do so for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s. Conversely, a pricing rule that satisfies these constraints for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s will also satisfy them for any $v_{i}^{\downarrow}$s and $v_{i}^{\uparrow}$s.
+A pricing rule that satisfies all of these constraints must also do so for the smallest possible $v_{i}^{\downarrow}\text{s}$ and the largest possible $v_{i}^{\uparrow}$s. Conversely, a pricing rule that satisfies these constraints for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s will also satisfy them for any $v_{i}^{\downarrow}$s and $v_{i}^{\uparrow}$s.
 
 
 > [!NOTE]  
