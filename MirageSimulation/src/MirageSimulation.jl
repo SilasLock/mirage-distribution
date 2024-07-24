@@ -43,10 +43,6 @@ function exampleDashboard(b)
 	return b
 end
 
-# function price(bid::Float64)
-# 	b * dashboard(b)
-# end
-
 function utilityWithIndices(v_index::Int64, b_index::Int64, nonzerotypes::Int64)
 	# This utility function should be correct and numerically stable for 64 bit floats.
 	xarray = dashboard.(collect(1:b_index) ./ nonzerotypes)
