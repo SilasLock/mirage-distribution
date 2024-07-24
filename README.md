@@ -26,7 +26,7 @@ However, in order to compute the distribution of agents' bids, we need to first 
 
 First, we assume that *bid space is discretized.* That is, there exists a set of bids $b_{0}, ..., b_{n}$ such that an agent faced with a dashboard can only select one of those $n + 1$ discrete options to bid.
 
-Furthermore, we assume that each of these bids $b_{i}$ has an associated *value region* $R_{i} \subseteq \mathbb{R}$
+Furthermore, we define each of these bids $b_{i}$ to have an associated *value region* $R_{i} \subseteq [0, 1]$, such that all value regions are pairwise disjoint and $\biguplus_{i = 0}^{n} R_{i} = [0, 1]$.
 
 
 
