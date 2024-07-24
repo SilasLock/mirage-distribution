@@ -13,5 +13,6 @@ instantiate()
 # We're, at present, not choosing to suppress the precompilation progress bar that
 # comes with the instantiate() function.
 
+# Activate the simulation through the main() function.
 using MirageSimulation
 MirageSimulation.main()
