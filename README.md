@@ -116,16 +116,15 @@ Observe that including the existence of a zero type in this discretization ensur
 This also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
 
 ```math
-\mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) = \frac{\sum\limits_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum\limits_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
+\mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i) = \frac{\sum\limits_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum\limits_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
 ```
 and
 ```math
-\sum_{i = 0}^{n} \mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) [F(\frac{i}{n}) - F(\frac{i - 1}{n})]
+\mathbb{P}(\text{bid index} \leq \hat{i}) = \sum_{i = 0}^{n} \mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i) [F(\frac{i}{n}) - F(\frac{i - 1}{n})]
 ```
 
-Furthermore, these can be even more easily computed by observing that the agent's utility from having value index $i$ and bidding at index $j$, which we have previously written as $b_{i} x(b_{j}) - p(b_{j})$, can be rewritten as
+Furthermore, these can be even more easily computed by observing that the agent's utility from having value index $i$ and bidding at index $j$, which we have previously written as $b_{i} x(b_{j}) - p(b_{j})$, can be rewritten to be more numerically stable when using floating point numbers as
 
-and
 ```math
 b_{i} x(b_{j}) - p(b_{j}) = [(i - j) x(j / n) + \sum_{\ell = 1}^{j} x(\ell / n)] / n
 ```
