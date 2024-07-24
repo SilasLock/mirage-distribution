@@ -68,7 +68,13 @@ Observe that the upper and lower constraints are the tightest when $v_{i}^{\down
 }
 ```
 
-A pricing rule that satisfies all of these constraints must also do so for the smallest possible $v_{i}^{\downarrow}\text{s}$ and the largest possible $v_{i}^{\uparrow}$s. Conversely, a pricing rule that satisfies these constraints for the smallest possible $v_{i}^{\downarrow}$s and the largest possible $v_{i}^{\uparrow}$s will also satisfy them for any $v_{i}^{\downarrow}$s and $v_{i}^{\uparrow}$s.
+A pricing rule that satisfies all of these constraints must also do so for the smallest possible $v_{i}^{\downarrow}\text{s}$ and the largest possible $v_{i}^{\uparrow}\text{s}$. Conversely, a pricing rule that satisfies these constraints for the smallest possible $v_{i}^{\downarrow}\text{s}$ and the largest possible $v_{i}^{\uparrow}\text{s}$ will also satisfy them for any $v_{i}^{\downarrow}\text{s}$ and $v_{i}^{\uparrow}\text{s}$. In the limit, as each $v_{i}^{\downarrow}$ and $v_{i}^{\uparrow}$ moves toward these minimal/maximal values, we obtain
+
+```math
+v_{i}^{\uparrow}, v_{i + 1}^{\downarrow} \rightarrow \sup R_{i}
+```
+
+since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R_{i}  = \inf R_{i + 1}$. Using $\partial$
 
 
 > [!NOTE]  
