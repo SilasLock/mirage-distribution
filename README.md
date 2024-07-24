@@ -108,9 +108,10 @@ This allows us to define two vital quantities: a discretized version of the cond
 
 ```math
 \displaylines{
-\mathbb{P}(\text{bid index } \geq \hat{i} \mid \text{value index } = i) =
+\mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) = \frac{\sum_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
 }
 ```
+
 
 
 > [!NOTE]  
