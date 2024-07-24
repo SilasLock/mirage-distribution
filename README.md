@@ -22,5 +22,13 @@ For basics on the Julia language, see the [getting started page](https://docs.ju
 ## The Model
 Inside `MirageSimulation/src/MirageSimulation.jl`, you'll find two different functions for the CDF of the value distribution: the Kumaraswamy distribution and the beta distribution. In the code, these are named `kumaraswamyCDF` and `betaCDF`, respectively. These both have a continuous support on the interval $[0, 1]$ and are vaguely bell-curve-shaped, making them ideal candidates for a flexible family of agent value distributions.
 
+However, in order to compute the distribution of agents' bids, we need to first discretize these continuous value distributions. How do we do this?
+
+First, we assume that *bid space is discretized.* That is, there exists a set of bids $b_{0}, ..., b_{n}$ such that an agent faced with a dashboard can only select one of those $n + 1$ discrete options to bid.
+
+Furthermore, we assume that each of these bids $b_{i}$ has an associated *value region* $R_{i} \subseteq \mathbb{R}$
+
+
+
 > [!NOTE]  
 > This section is unfinished. The plan is to document the major functions in `MirageSimulation/src/MirageSimulation.jl` so that an unfamiliar user can tinker around with them.
