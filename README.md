@@ -65,6 +65,12 @@ Then, summing these together from $i = 1$ to $i = k$ and applying summation by p
 ```
 
 
+\begin{align}
+    test math here
+    \\ hi
+\end{align}
+
+
 
 
 > [!NOTE]  
