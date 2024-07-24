@@ -60,16 +60,11 @@ Combining these two constraints into one proposition and rearranging so as to is
 Then, summing these together from $i = 1$ to $i = k$ and applying summation by parts, we obtain
 
 ```math
+\displaylines{
 \forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i - 1}^{\uparrow} \in R_{i - 1},
 \\ v_{k}^{\downarrow} x(b_{k}) - v_{1}^{\downarrow} x(b_{0}) - \sum_{i = 1}^{k - 1} x(b_{i}) [v_{i + 1}^{\downarrow} - v_{i}^{\downarrow}] \geq p(b_{k}) - p(b_{0}) \geq v_{k - 1}^{\uparrow} x(b_{k}) - v_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 2} x(b_{i + 1}) [v_{i + 1}^{\uparrow} - v_{i}^{\uparrow}]
+}
 ```
-
-
-\begin{align}
-    test math here
-    \\ hi
-\end{align}
-
 
 
 
