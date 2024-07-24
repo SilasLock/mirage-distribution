@@ -22,7 +22,9 @@ For basics on the Julia language, see the [getting started page](https://docs.ju
 ## The Model
 Inside `MirageSimulation/src/MirageSimulation.jl`, you'll find two different functions for the CDF of the value distribution: the Kumaraswamy distribution and the beta distribution. In the code, these are named `kumaraswamyCDF` and `betaCDF`, respectively. These both have a continuous support on the interval $[0, 1]$ and are vaguely bell-curve-shaped, making them ideal candidates for a flexible family of agent value distributions.
 
-However, in order to compute the distribution of agents' bids, we need to first discretize these continuous value distributions. We also need to make sure that the discretized version of our (continuous, IC) dashboard has a discretized pricing rule that both (a) retains the same incentive compatibility properties and (b) retains the same functional form regardless of how finely/coarsely discretized we make the type space. How do we do this?
+However, these value distributions do not, for any arbitrary dashboard, produce a closed form for the CDF of a quantal responding agent's bid distribution. The bid distribution's CDF must instead by discretely approximated.
+
+In order to compute a discrete approximation to the bid distribution's CDF, we need to first find a suitable way to discretize our continuous value distributions, and a suitable way to discretize the dashboard mechanism itself. We also need to make sure that the discretized version of our (continuous, IC) dashboard has a discretized pricing rule that both (a) retains the same incentive compatibility properties as the continuous version and (b) retains the same functional form regardless of how finely/coarsely discretized we make the type space. How do we do this?
 
 First, we assume that *bid space is discretized.* That is, there exists a set of bids $b_{0} < ... < b_{n}$ such that an agent faced with a dashboard can only select one of those $n + 1$ discrete options to bid.
 
@@ -113,7 +115,7 @@ Observe that including the existence of a zero type in this discretization ensur
 }
 ```
 
-Note that the above formula for the pricing rule also happens to hold for when $k = 0$.
+Note that the above formula for the pricing rule also happens to remain valid for when $k = 0$.
 
 This particular discretization of the type space also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
 
