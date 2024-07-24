@@ -28,19 +28,27 @@ First, we assume that *bid space is discretized.* That is, there exists a set of
 
 Furthermore, we define each of these bids $b_{i}$ to have an associated *value region* $R_{i} \subseteq [0, 1]$, such that all value regions are pairwise disjoint, adjacent value regions are "connected" such that $\sup R_{i}  = \inf R_{i + 1}$, and
 
-$$\biguplus_{i = 0}^{n} R_{i} = [0, 1] \text{.}$$
+```math
+\biguplus_{i = 0}^{n} R_{i} = [0, 1] \text{.}
+```
 
 We redefine a dashboard and pricing rule $(x, p)$ as *truthful* if for any $v \in R_{i}$,
 
-$$v x(b_{i}) - p(b_{i}) \geq v x(b_{j}) - p(b_{j})$$
+```math
+$$v x(b_{i}) - p(b_{i}) \geq v x(b_{j}) - p(b_{j})
+```
 
 for all $j \neq i$. In other words, a dashboard is truthful if all agents weakly prefer reporting the bid corresponding to their own value region, rather than a different value region.
 
 We can write the local downward/upward IC constraints in this model as
 
-$$\forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i}^{\downarrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\downarrow} x(b_{i - 1}) - p(b_{i - 1})$$
+```math
+\forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i}^{\downarrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\downarrow} x(b_{i - 1}) - p(b_{i - 1})
+```
 
-$$`\forall i \in \{ 0, ..., n - 1 \}, \forall v_{i}^{\uparrow} \in R_{i}, v_{i}^{\uparrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\uparrow} x(b_{i + 1}) - p(b_{i + 1})`$$
+```math
+\forall i \in \{ 0, ..., n - 1 \}, \forall v_{i}^{\uparrow} \in R_{i}, v_{i}^{\uparrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\uparrow} x(b_{i + 1}) - p(b_{i + 1})
+```
 
 
 
