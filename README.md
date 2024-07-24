@@ -40,7 +40,7 @@ We can write the local downward/upward IC constraints in this model as
 
 $$\forall i \in \{ 1, ..., n \}, \forall v_{i}^{\downarrow} \in R_{i}, v_{i}^{\downarrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\downarrow} x(b_{i - 1}) - p(b_{i - 1})$$
 
-$$\forall i \in \{ 0, ..., n - 1 \}, \forall v_{i}^{\uparrow} \in R_{i}, v_{i}^{\uparrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\uparrow} x(b_{i + 1}) - p(b_{i + 1})$$
+$`\forall i \in \{ 0, ..., n - 1 \}, \forall v_{i}^{\uparrow} \in R_{i}, v_{i}^{\uparrow} x(b_{i}) - p(b_{i}) \geq v_{i}^{\uparrow} x(b_{i + 1}) - p(b_{i + 1})`$
 
 
 
