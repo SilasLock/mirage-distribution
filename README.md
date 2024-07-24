@@ -109,17 +109,28 @@ Observe that including the existence of a zero type in this discretization ensur
 ```math
 \displaylines{
 \forall i \in \{ 1, ..., n \},
-\\ p(b_{k}) = \b_{k} x(b_{k}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [\b_{i + 1} - \b_{i}]
+\\ p(b_{k}) = b_{k} x(b_{k}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [b_{i + 1} - b_{i}]
 }
 ```
 
 This also allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
 
 ```math
-\displaylines{
 \mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) = \frac{\sum\limits_{j = 0}^{\min(\hat{i}, i)} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}{\sum\limits_{j = 0}^{i} \exp(\lambda [b_{i} x(b_{j}) - p(b_{j})])}
-}
 ```
+and
+```math
+\sum_{i = 0}^{n} \mathbb{P}(\text{bid index} \geq \hat{i} \mid \text{value index} = i) [F(\frac{i}{n}) - F(\frac{i - 1}{n})]
+```
+
+Furthermore, these can be even more easily computed by observing that the agent's utility from having value index $i$ and bidding at index $j$, which we have previously written as $b_{i} x(b_{j}) - p(b_{j})$, can be rewritten as
+
+and
+```math
+b_{i} x(b_{j}) - p(b_{j}) = [(i - j) x(j / n) + \sum_{\ell = 1}^{j} x(\ell / n)] / n
+```
+
+Note that this formula, as with the one for the discretized conditional mirage distribution, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types or the zero type.
 
 
 
