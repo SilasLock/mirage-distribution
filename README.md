@@ -61,7 +61,7 @@ Combining these two constraints into one proposition and rearranging so as to is
 }
 ```
 
-Observe that the upper and lower constraints are the tightest when $v_{i}^{\downarrow}$ is as small as possible, and when $v_{i}^{\uparrow}$ is as large as possible. Then, summing the constraints together from $i = 1$ to $i = k$ and applying summation by parts, we obtain
+Observe that the upper and lower constraints are the tightest when $v_{i}^{\downarrow}$ is as small as possible, and when $v_{i - 1}^{\uparrow}$ is as large as possible. Then, summing the constraints together from $i = 1$ to $i = k$ and applying summation by parts, we obtain
 
 ```math
 \displaylines{
@@ -133,7 +133,7 @@ Furthermore, these can be even more easily computed by observing that the agent'
 b_{i} x(b_{j}) - p(b_{j}) = [(i - j) x(j / n) + \sum_{\ell = 1}^{j} x(\ell / n)] / n
 ```
 
-Note that this formula, as with the one for the discretized conditional mirage distribution, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types or the zero type.
+Note that this formula, as with the one for the discretized conditional mirage distribution, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types' indices (i.e. $1, ..., n$) or the zero type's index (i.e. $0$).
 
 
 
