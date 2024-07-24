@@ -63,7 +63,7 @@ Observe that the upper and lower constraints are the tightest when $v_{i}^{\down
 
 ```math
 \displaylines{
-\forall i \in \{ 1, ..., n \}, \forall v_{1}^{\downarrow} \in R_{1}, ..., v_{k}^{\downarrow} \in R_{k}, \forall v_{0}^{\uparrow} \in R_{0}, ..., v_{k - 1}^{\uparrow} \in R_{k - 1}
+\forall i \in \{ 1, ..., n \}, \forall v_{1}^{\downarrow} \in R_{1}, ..., v_{k}^{\downarrow} \in R_{k}, \forall v_{0}^{\uparrow} \in R_{0}, ..., v_{k - 1}^{\uparrow} \in R_{k - 1},
 \\ v_{k}^{\downarrow} x(b_{k}) - v_{1}^{\downarrow} x(b_{0}) - \sum_{i = 1}^{k - 1} x(b_{i}) [v_{i + 1}^{\downarrow} - v_{i}^{\downarrow}] \geq p(b_{k}) - p(b_{0}) \geq v_{k - 1}^{\uparrow} x(b_{k}) - v_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 2} x(b_{i + 1}) [v_{i + 1}^{\uparrow} - v_{i}^{\uparrow}]
 }
 ```
@@ -74,7 +74,43 @@ A pricing rule that satisfies all of these constraints must also do so for the s
 v_{i}^{\uparrow}, v_{i + 1}^{\downarrow} \rightarrow \sup R_{i}
 ```
 
-since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R_{i}  = \inf R_{i + 1}$. Using $\partial$
+since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R_{i}  = \inf R_{i + 1}$. It turns out that this *exactly pins down the pricing rule up to an additive constant$. Using $\partial_{i}^{\uparrow} \triangleq \sup R_{i}$, we can write this expression for the pricing rule as
+
+```math
+\displaylines{
+\forall i \in \{ 1, ..., n \},
+\\ p(b_{k}) - p(b_{0}) = \partial_{k}^{\uparrow} x(b_{k}) - \partial_{0}^{\uparrow} x(b_{0}) - \sum_{i = 0}^{k - 1} x(b_{i + 1}) [\partial_{i + 1}^{\uparrow} - \partial_{i}^{\uparrow}]
+}
+```
+
+This motivates a very natural discretization of the value space. If all the probability mass in value region $R_{i}$ were reallocated to the location $\sup R_{i}$ and $\sup R_{i} \in R_{i}$, observe that the above expression for the pricing rule would not change. Thus, we have found a dashboard and pricing rule that are incentive compatible in a discretized bid space but continuous value space, that maintain the same functional form if the value space were then discretized to only place nonzero probabilities on each $\sup R_{i}$.
+
+The simplest way to do this is to split the unit interval of possible values $[0, 1]$ into $n$ half-open regions, such that for all $i \in [n]$ we have the region
+```math
+(\frac{i - 1}{n}, \frac{i}{n}]
+```
+
+and then define one additional region for the zero type, equal to the singleton set solely containing $0 \in [0, 1]$. We then define the bids as
+
+```math
+b_{i} = \sup (\frac{i - 1}{n}, \frac{i}{n}] = i / n
+```
+
+for all $i \in [n]$ and
+
+```math
+b_{0} = \sup \{ 0 \} = 0
+```
+
+and say that in our discretized type space, an agent has probability of having value $b_{i}$ equal to $F(i / n) - F((i - 1) / n)$, where $F$ is the CDF of our original continuous value distribution.
+
+This allows us to define two vital quantities: a discretized version of the conditional mirage distribution's CDF, and a discretized version of the mirage distribution's CDF. They are as follows:
+
+```math
+\displaylines{
+\mathbb{P}(\text{bid index } \geq \hat{i} \mid \text{value index } = i) =
+}
+```
 
 
 > [!NOTE]  
