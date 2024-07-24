@@ -13,6 +13,8 @@ To do this, you'll first need to install Julia. Go to the [Julia downloads page]
 
 Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
 
+The first time you run `julia init.jl`, the script will automatically install any dependencies needed for the simulation and isolate them on your computer to only be used within the `MirageSimulation` project. On subsequent runs of `julia init.jl`, the script will verify that you already have those dependencies installed and will run the simulation within the installation step.
+
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
 
 > [!TIP]
@@ -25,6 +27,8 @@ Inside `MirageSimulation/src/MirageSimulation.jl`, you'll find two different fun
 However, these value distributions do not, for any arbitrary dashboard, produce a closed form for the CDF of a quantal responding agent's bid distribution. The bid distribution's CDF must instead by discretely approximated.
 
 In order to compute a discrete approximation to the bid distribution's CDF, we need to first find a suitable way to discretize our continuous value distributions, and a suitable way to discretize the dashboard mechanism itself. We also need to make sure that the discretized version of our (continuous, IC) dashboard has a discretized pricing rule that both (a) retains the same incentive compatibility properties as the continuous version and (b) retains the same functional form regardless of how finely/coarsely discretized we make the type space. How do we do this?
+
+### Discretizing the Mechanism - *Theory*
 
 First, we assume that *bid space is discretized.* That is, there exists a set of bids $b_{0} < ... < b_{n}$ such that an agent faced with a dashboard can only select one of those $n + 1$ discrete options to bid.
 
@@ -87,12 +91,25 @@ since the value regions $R_{i}$ were assumed to be "connected" such that $\sup R
 
 This motivates a very natural discretization of the value space. If all the probability mass in value region $R_{i}$ were reallocated to the location $\sup R_{i}$ and $\sup R_{i} \in R_{i}$, observe that the above expression for the pricing rule would not change. Thus, we have found a dashboard and pricing rule that are incentive compatible in a discretized bid space yet continuous value space, which maintain the same functional form if the value space were then discretized to only place nonzero probabilities on each $\sup R_{i}$.
 
-The simplest way to do this is to split the unit interval of possible values $[0, 1]$ into $n$ half-open regions, such that for all $i \in [n]$ we have the region
+Furthermore, observe that in none of the expressions so far derived have the numerical values of the bids $b_{0} < ... < b_{n}$ played any role. They have solely served as arbitrary quantities that the agent submits to the dashboard. Thus, we could identify these bids with the supremum of each value region and assign $b_{i} = \sup R_{i}$. This decision has the nice property that, once we have discretized value space by moving all probability mass from each $R_{i}$ onto $\sup R_{i}$, the definition of a *truthful* dashboard provided at the start of this section lines up with the conventional definition of a truthful mechanism.
+
+### Discretizing the Mechanism - *Applying the theory to our code*
+
+Our discretization procedure--moving all probability mass from each $R_{i}$ onto $\sup R_{i}$--can be applied to any valid choice of value regions $R_{0}, ..., R_{n}$ where each $\sup R_{i} \in R_{i}$. For this project, we're going to select value regions that are computationally easy-to-work-with.
+
+First, we split the unit interval of possible values $[0, 1]$ into $n$ half-open value regions, such that for all $i \in [n]$ we have the region
+
 ```math
-(\frac{i - 1}{n}, \frac{i}{n}]
+R_{i} = (\frac{i - 1}{n}, \frac{i}{n}]
 ```
 
-and then define one additional region for the zero type, equal to the singleton set solely containing $0 \in [0, 1]$. We then define the bids as
+and then define one additional value region for the zero type, equal to the singleton set
+
+```math
+R_{0} = \{ 0 \} \text{.}
+```
+
+We then define the bids as
 
 ```math
 b_{i} = \sup (\frac{i - 1}{n}, \frac{i}{n}] = i / n
@@ -106,7 +123,7 @@ b_{0} = \sup \{ 0 \} = 0
 
 and say that in our discretized type space, an agent has probability of having value $b_{i}$ equal to $F(i / n) - F((i - 1) / n)$, where $F$ is the CDF of our original continuous value distribution.
 
-Observe that including the existence of a zero type in this discretization ensures that $b_{0} x(b_{0}) - p(b_{0}) \leq 0$, and that this would not necessarily be the case if $b_{0} \neq 0$. Additionally, note that the IR constraint means that we must have $b_{0} x(b_{0}) - p(b_{0}) \geq 0$ in this discretized model. Thus, we know $b_{0} x(b_{0}) - p(b_{0}) = 0$, and this further simplifies our pricing rule to be
+Observe that including the existence of a zero type $b_{0} = 0$ in this discretization ensures that $b_{0} x(b_{0}) - p(b_{0}) \leq 0$, and that this would not necessarily be the case if $b_{0} \neq 0$. Additionally, note that the IR constraint means that we must have $b_{0} x(b_{0}) - p(b_{0}) \geq 0$ in this discretized model. Thus, we know $b_{0} x(b_{0}) - p(b_{0}) = 0$, and this further simplifies our pricing rule to be
 
 ```math
 \displaylines{
