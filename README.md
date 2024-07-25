@@ -13,7 +13,7 @@ To do this, you'll first need to install Julia. Go to the [Julia downloads page]
 
 Once the process is complete, you should be able to run the simulation from your preferred terminal emulator.
 
-The first time you run `julia init.jl`, the script will automatically install any dependencies needed for the simulation and isolate them on your computer to only be used within the `MirageSimulation` project. On subsequent runs of `julia init.jl`, the script will verify that you already have those dependencies installed and will run the simulation within the installation step.
+The first time you run `julia init.jl`, the script will automatically install any dependencies needed for the simulation and isolate them on your computer to only be used within the `MirageSimulation` project. On subsequent runs of `julia init.jl`, the script will verify that you already have those dependencies installed and will run the simulation without the installation step.
 
 For basics on the Julia language, see the [getting started page](https://docs.julialang.org/en/v1/manual/getting-started/).
 
