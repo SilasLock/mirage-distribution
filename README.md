@@ -163,7 +163,7 @@ Note that the above formula for utility, as with the one for the discretized con
 
 
 ## Adding a New Simulation
-The `main()` function in `MirageSimulation/src/MirageSimulation.jl` demonstrates how to start a new simulation: simply call the ``startSimulation` function with a desired
+The `main()` function in `MirageSimulation/src/MirageSimulation.jl` demonstrates how to start a new simulation: simply call the `startSimulation` function with a desired
 
 - dashboard,
 - value CDF,
