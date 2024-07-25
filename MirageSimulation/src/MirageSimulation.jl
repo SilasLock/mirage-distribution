@@ -160,7 +160,7 @@ function startSimulation(x::Function, valueCDF::Function, lambda::Float64, nonze
 	true_cdf_values = valueCDF.(agent_values)
 	mirage_cdf_values = mirageCDFWithIndices.(collect(0:nonzerotypes), x, valueCDF, lambda, nonzerotypes)
 	# If you were to instead use the command
-	# mirage_cdf_values = mirageCDF.(agent_values, lambda, nonzerotypes)
+	# mirage_cdf_values = mirageCDF.(agent_values, x, valueCDF, lambda, nonzerotypes)
 	# it sometimes results in a floating point rounding error that causes some adjacent v_hat values to
 	# produce the same output. And that's bad!
 	plotResults(agent_values, true_cdf_values, mirage_cdf_values)

@@ -159,4 +159,15 @@ Note that the above formula for utility, as with the one for the discretized con
 
 
 > [!NOTE]  
-> This section is unfinished. The plan is to document the major functions in `MirageSimulation/src/MirageSimulation.jl` so that an unfamiliar user can tinker around with them.
+> This section is finished, but might need additional elaboration. We've documented the major functions in `MirageSimulation/src/MirageSimulation.jl` so that an unfamiliar user can tinker around with them. If you're one such unfamiliar user and are having trouble understanding the code, let us know and we'll update this section to make it clearer.
+
+
+## Adding a New Simulation
+The `main()` function in `MirageSimulation/src/MirageSimulation.jl` demonstrates how to start a new simulation: simply call the ``startSimulation` function with a desired
+
+- dashboard,
+- value CDF,
+- lambda (i.e. level of agent rationality), and
+- number of non-zero types used in the discretization procedure.
+
+To make your own simulation, write up a new dashboard function and/or a new value CDF function, then call `startSimulation` with those new functions. For an example of existing dashboards and value CDFs, look at the top of the `MirageSimulation/src/MirageSimulation.jl` file. Some starter functions have already been provided for you, and it should be possible to use those as a template from which you can build your own.
