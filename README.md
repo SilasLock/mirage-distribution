@@ -144,13 +144,17 @@ and
 \mathbb{P}(\text{bid index} \leq \hat{i}) = \sum_{i = 0}^{n} \mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i) [F(\frac{i}{n}) - F(\frac{i - 1}{n})]
 ```
 
-Furthermore, these can be even more easily computed by observing that the agent's utility from having value index $i$ and bidding at index $j$, which we have previously written as $b_{i} x(b_{j}) - p(b_{j})$, can be rewritten to be more numerically stable when using floating point numbers as
+In the code, $\mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i)$ is computed using the function `conditionalMirageCDFWithIndices`, while $\mathbb{P}(\text{bid index} \leq \hat{i})$ is computed with the function `mirageCDFWithIndices`.
+
+Furthermore, the two functions can be even more easily computed by observing that the agent's utility from having value index $i$ and bidding at index $j$, which we have previously written as $b_{i} x(b_{j}) - p(b_{j})$, can be rewritten to be more numerically stable when using floating point numbers as
 
 ```math
 b_{i} x(b_{j}) - p(b_{j}) = [(i - j) x(j / n) + \sum_{\ell = 1}^{j} x(\ell / n)] / n
 ```
 
-Note that this formula, as with the one for the discretized conditional mirage distribution, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types' indices (i.e. $1, ..., n$) or the zero type's index (i.e. $0$).
+In the code, this formula is computed using the `utilityWithIndices` function.
+
+Note that the above formula for utility, as with the one for the discretized conditional mirage distribution $\mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i)$, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types' indices (i.e. $1, ..., n$) or the zero type's index (i.e. $0$).
 
 
 
