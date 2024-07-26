@@ -101,6 +101,17 @@ function conditionalMirageCDFWithIndices(v_hat_index::Int64, v_index::Int64, x::
 	return numerator / denominator
 end
 
+function exAnteAllocationProbability(x::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)::Float64
+	# This is the probability q that dashboard x allocates an item to a quantal-responding agent.
+	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
+	mirage_pdf_values = mirageCDFWithIndices.(collect(0:nonzerotypes), x, valueCDF, lambda, nonzerotypes)
+	for i = reverse(2:nonzerotypes + 1)
+		mirage_pdf_values[i] -= mirage_pdf_values[i - 1]
+	end
+	dashboard_probs = x.(agent_values)
+	return dot(dashboard_probs, mirage_pdf_values)
+end
+
 
 
 
@@ -159,6 +170,8 @@ function startSimulation(x::Function, valueCDF::Function, lambda::Float64, nonze
 	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
 	true_cdf_values = valueCDF.(agent_values)
 	mirage_cdf_values = mirageCDFWithIndices.(collect(0:nonzerotypes), x, valueCDF, lambda, nonzerotypes)
+	print("Ex ante allocation probability (q): ")
+	println(exAnteAllocationProbability(x, valueCDF, lambda, nonzerotypes))
 	# If you were to instead use the command
 	# mirage_cdf_values = mirageCDF.(agent_values, x, valueCDF, lambda, nonzerotypes)
 	# it sometimes results in a floating point rounding error that causes some adjacent v_hat values to
