@@ -164,8 +164,26 @@ To do this, we introduce the following notation:
 
 ```math
 \displaylines{
-G(\hat{i}) &\triangleq \mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i)
-\\ teesting a thing &here
+G_{x}(\hat{i}) &\triangleq \mathbb{P}(\text{bid index} \leq \hat{i})
+\\ G_{x}(\hat{i} \mid i) &\triangleq \mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i)
+\\ S(i) &\triangleq \mathbb{P}(\text{value index} > i) = 1 - F(i / n)
+}
+```
+
+In other words, $G(\hat{i})$ is the discretized mirage distribution's CDF under dashboard $x$ and its IC pricing rule, $G(\hat{i} \mid i)$ is the discretized conditional mirage distribution's CDF under dashboard $x$ and its IC pricing rule, and $S(i)$ is the discretized survival function for the true value distribution.
+
+Using summation by parts, we can compute that
+
+```math
+1 - G_{x}(\hat{i}) = \sum\limits_{i = \hat{i}}^{n - 1} ([1 - G_{x}(\hat{i} \mid i + 1)] - [1 - G_{x}(\hat{i} \mid i)]) S(i)
+```
+
+which can be used to infer how $G_{x}(\hat{i})$ changes as $x$ (and $p$) changes to $\overline{x}$ (and $\overline{p}$). To do so, we compute
+
+```math
+\displaylines{
+1 - G_{\overline{x}}(\hat{i}) &= \sum\limits_{i = \hat{i}}^{n - 1} ([1 - G_{\overline{x}}(\hat{i} \mid i + 1)] - [1 - G_{\overline{x}}(\hat{i} \mid i)]) S(i)
+\\ &= \sum\limits_{i = \hat{i}}^{n - 1} \frac{[1 - G_{\overline{x}}(\hat{i} \mid i + 1)] - [1 - G_{\overline{x}}(\hat{i} \mid i)]}{[1 - G_{x}(\hat{i} \mid i + 1)] - [1 - G_{x}(\hat{i} \mid i)]} ([1 - G_{x}(\hat{i} \mid i + 1)] - [1 - G_{x}(\hat{i} \mid i)]) S(i)
 }
 ```
 
