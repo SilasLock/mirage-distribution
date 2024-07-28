@@ -157,7 +157,14 @@ In the code, this formula is computed using the `utilityWithIndices` function.
 Note that the above formula for utility, as with the one for the discretized conditional mirage distribution $\mathbb{P}(\text{bid index} \leq \hat{i} \mid \text{value index} = i)$, also works when any of the indices are $0$. They can thus be fearlessly applied without having to worry about whether they're being written for the non-zero types' indices (i.e. $1, ..., n$) or the zero type's index (i.e. $0$).
 
 
+
+> [!NOTE]  
+> This section is finished, but might need additional elaboration. We've documented the major functions in `MirageSimulation/src/MirageSimulation.jl` so that an unfamiliar user can tinker around with them. If you're one such unfamiliar user and are having trouble understanding the code, let us know and we'll update this section to make it clearer.
+
+
 ### Discretizing Inference
+(Warning: This section is unfinished due to math problems!)
+
 We now need to infer the mirage distribution that occurs under a new dashboard $\overline{x}$ (and its corresponding IC pricing rule $\overline{p}$), using samples from the mirage distribution collected when an agent was faced with some original dashboard $x$ (and its corresponding IC pricing rule $p$).
 
 To do this, we introduce the following notation:
@@ -186,11 +193,6 @@ which can be used to infer how $G_{x}(\hat{i})$ changes as $x$ (and $p$) changes
 \\ &= \sum\limits_{i = \hat{i}}^{n - 1} \frac{[1 - G_{\overline{x}}(\hat{i} \mid i + 1)] - [1 - G_{\overline{x}}(\hat{i} \mid i)]}{[1 - G_{x}(\hat{i} \mid i + 1)] - [1 - G_{x}(\hat{i} \mid i)]} ([1 - G_{x}(\hat{i} \mid i + 1)] - [1 - G_{x}(\hat{i} \mid i)]) S(i)
 }
 ```
-
-
-
-> [!NOTE]  
-> This section is finished, but might need additional elaboration. We've documented the major functions in `MirageSimulation/src/MirageSimulation.jl` so that an unfamiliar user can tinker around with them. If you're one such unfamiliar user and are having trouble understanding the code, let us know and we'll update this section to make it clearer.
 
 
 ## Adding a New Simulation
