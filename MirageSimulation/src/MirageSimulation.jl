@@ -210,7 +210,8 @@ function inferValueDistributionTest(empiricalFrequency::Vector{Float64}, x::Func
 	@assert length(empiricalFrequency) == nonzerotypes + 1
 	iterations = 100
 	# TODO: This function is just a test of a particular iterative method! Let's see if it works properly before committing it.
-	fVector = Vector{Float64}(undef, nonzerotypes + 1)
+	# fVector = Vector{Float64}(undef, nonzerotypes + 1)
+	fVector = fill(1.0 / (nonzerotypes + 1), nonzerotypes + 1)
 	muVector = fill(0.0, nonzerotypes + 1)
 	gMatrix = Matrix{Float64}(undef, nonzerotypes + 1, nonzerotypes + 1)
 	for tempcartesianindex in CartesianIndices(gMatrix)
@@ -232,7 +233,9 @@ function inferValueDistributionTest(empiricalFrequency::Vector{Float64}, x::Func
 			if (muVector[i] >= 1.0 - epsilon)
 				muVector[i] = 1.0 - epsilon
 			end
-			# muVector[i] *= muVector[i]
+			if (fVector[i] > epsilon / (nonzerotypes + 1))
+				muVector[i] *= muVector[i]
+			end
 		end
 		# Step 2.
 		tempVector = \(gMatrixTranspose, muVector)
@@ -398,9 +401,12 @@ function startSimulation(numberofsamples::Int64, x_family::Function, theta_initi
 	# Dot product inferred_value_pdf with the matrix of conditional cdfs of a *new* dashboard
 	# return that
 
-	print("Ex ante allocation probability (q): ")
-	println(exAnteAllocationProbability(b -> x_family(b, theta_initial), valueCDF, lambda, nonzerotypes))
-	# plotResults(agent_values, true_cdf_values, mirage_cdf_values)
+	theta_updated = theta_initial * theta_initial
+	mirage_cdf_values_updated = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), inferred_value_pdf, lambda, nonzerotypes)
+
+	# print("Ex ante allocation probability (q): ")
+	# println(exAnteAllocationProbability(b -> x_family(b, theta_initial), valueCDF, lambda, nonzerotypes))
+	plotResults(agent_values, true_cdf_values, mirage_cdf_values_updated)
 end
 
 
