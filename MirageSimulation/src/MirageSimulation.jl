@@ -9,7 +9,7 @@ using Distributions: Beta, cdf
 # Do the same for the "dot" function from the LinearAlgebra package.
 using LinearAlgebra: dot
 # We're also going to use the Plots package; I think this should be all its relevant functions.
-using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!
+using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, scatter3d
 # TODO: Weirdly, "display()" isn't imported here but still seems to work? What's up with that?
 
 
@@ -25,14 +25,15 @@ function betaCDF(alpha::Float64, beta::Float64)::Function
     return v -> cdf(Beta(alpha, beta), v)
 end
 
-function mixtureZeroOneCDF(p::Float64)::Function
-	return v -> {
-		if v < 1.0
-			return 1.0 - p
-		else
-			return 1.0
-	}
-end
+# function mixtureZeroOneCDF(p::Float64)::Function
+# 	return v -> {
+# 		if v < 1.0
+# 			return 1.0 - p
+# 		else
+# 			return 1.0
+# 		end
+# 	}
+# end
 
 
 # Dashboard section! You can code up new dashboards here and use them in a simulation.
@@ -323,6 +324,26 @@ function plotResults(values::Vector{Float64}, true_cdf_values::Vector{Float64}, 
 	# https://discourse.julialang.org/t/wait-for-a-keypress/20218/7
 end
 
+function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector{Float64}, allocationproberror::Vector{Float64})
+	# initialize a 3D plot with 1 empty series
+	ourplot = scatter3d(theta_initials, theta_updateds, allocationproberror)
+	# ourplot = plot3d(
+	# 	1,
+	# 	xlim = (-30, 30),
+	# 	ylim = (-30, 30),
+	# 	zlim = (0, 60),
+	# 	title = "Lorenz Attractor",
+	# 	legend = false,
+	# 	marker = 2,
+	# )
+	title!(ourplot, "Errors in ex-ante allocation probability")
+	xlabel!(ourplot, "theta old")
+	ylabel!(ourplot, "theta new")
+	zlabel!(ourplot, "Error")
+	display(ourplot)
+end
+
+
 function inferExAnteAllocationProbability(x::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)::Float64
 	# This is the probability q that dashboard x allocates an item to a quantal-responding agent.
 	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
@@ -406,7 +427,8 @@ function startSimulation(numberofsamples::Int64, x_family::Function, theta_initi
 
 	# print("Ex ante allocation probability (q): ")
 	# println(exAnteAllocationProbability(b -> x_family(b, theta_initial), valueCDF, lambda, nonzerotypes))
-	plotResults(agent_values, true_cdf_values, mirage_cdf_values_updated)
+	# plotResults(agent_values, true_cdf_values, mirage_cdf_values_updated)
+	visualizeErrors(collect(0:nonzerotypes) ./ nonzerotypes, collect(0:nonzerotypes) ./ nonzerotypes, collect(0:nonzerotypes) ./ nonzerotypes)
 end
 
 
@@ -416,7 +438,7 @@ function main()
 	valueCDF = betaCDF(2.0, 2.0)
 	lambda = 30.0
 	nonzerotypes = 90
-	displayMirage(x, valueCDF, lambda, nonzerotypes)
+	# displayMirage(x, valueCDF, lambda, nonzerotypes)
 
 	# Now let's test some inference procedures!
 	# inferValueDistribution(uniformFrequency(nonzerotypes), x, lambda, nonzerotypes)
