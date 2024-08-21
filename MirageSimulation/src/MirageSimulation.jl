@@ -340,7 +340,13 @@ function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector
 	xlabel!(ourplot, "theta old")
 	ylabel!(ourplot, "theta new")
 	zlabel!(ourplot, "Error")
-	display(ourplot)
+	displayandpause(ourplot)
+end
+
+function displayandpause(plotobject)
+	display(plotobject)
+	println("Press ENTER when you're ready to stop looking at the plot.")
+	junk = readline()
 end
 
 
@@ -424,6 +430,18 @@ function startSimulation(numberofsamples::Int64, x_family::Function, theta_initi
 
 	theta_updated = theta_initial * theta_initial
 	mirage_cdf_values_updated = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), inferred_value_pdf, lambda, nonzerotypes)
+
+	theta_granularity = 10
+
+	x_thetas = fill(0.0, 0)
+	y_thetas = fill(0.0, 0)
+	for i in 0:theta_granularity-1
+		for j in 0:theta_granularity-1
+			# insert x,y coordinates here
+			# TODO: Start work here.
+			# x_thetas.append(1.0)
+		end
+	end
 
 	# print("Ex ante allocation probability (q): ")
 	# println(exAnteAllocationProbability(b -> x_family(b, theta_initial), valueCDF, lambda, nonzerotypes))
