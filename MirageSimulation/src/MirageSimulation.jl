@@ -9,7 +9,7 @@ using Distributions: Beta, cdf
 # Do the same for the "dot" function from the LinearAlgebra package.
 using LinearAlgebra: dot
 # We're also going to use the Plots package; I think this should be all its relevant functions.
-using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, scatter3d
+using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, surface
 # TODO: Weirdly, "display()" isn't imported here but still seems to work? What's up with that?
 
 
@@ -209,7 +209,9 @@ end
 
 function inferValueDistributionTest(empiricalFrequency::Vector{Float64}, x::Function, lambda::Float64, nonzerotypes::Int64)::Vector{Float64}
 	@assert length(empiricalFrequency) == nonzerotypes + 1
-	iterations = 100
+	# Change iterations to 100 to try to actually converge.
+	# Use iterations=1 to do MLE without the "keep f(i) non-negative" constraint.
+	iterations = 1
 	# TODO: This function is just a test of a particular iterative method! Let's see if it works properly before committing it.
 	# fVector = Vector{Float64}(undef, nonzerotypes + 1)
 	fVector = fill(1.0 / (nonzerotypes + 1), nonzerotypes + 1)
@@ -316,17 +318,15 @@ function plotResults(values::Vector{Float64}, true_cdf_values::Vector{Float64}, 
 	title!(ourplot, "True vs Mirage Distribution")
 	xlabel!(ourplot, "v")
 	ylabel!(ourplot, "F(v)")
-	display(ourplot)
-	println("Press ENTER when you're ready to stop looking at the plot.")
-	junk = readline()
-	# It would be really nice to exit a given graph after an arbitrary
-	# keypress, but the tutorial here isn't as useful as one would like:
-	# https://discourse.julialang.org/t/wait-for-a-keypress/20218/7
+	displayandpause(ourplot)
 end
 
-function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector{Float64}, allocationproberror::Vector{Float64})
+function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector{Float64}, allocationproberrors::Array{Float64, 2})
+	@assert length(theta_initials) == length(theta_updateds)
+	println(allocationproberrors)
+	ourplot = surface(theta_initials, theta_updateds, allocationproberrors)
 	# initialize a 3D plot with 1 empty series
-	ourplot = scatter3d(theta_initials, theta_updateds, allocationproberror)
+	# ourplot = scatter3d(theta_initials, theta_updateds, allocationproberrors)
 	# ourplot = plot3d(
 	# 	1,
 	# 	xlim = (-30, 30),
@@ -339,7 +339,7 @@ function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector
 	title!(ourplot, "Errors in ex-ante allocation probability")
 	xlabel!(ourplot, "theta old")
 	ylabel!(ourplot, "theta new")
-	zlabel!(ourplot, "Error")
+	zlabel!(ourplot, "Expected absolute error")
 	displayandpause(ourplot)
 end
 
@@ -347,21 +347,18 @@ function displayandpause(plotobject)
 	display(plotobject)
 	println("Press ENTER when you're ready to stop looking at the plot.")
 	junk = readline()
+	# It would be really nice to exit a given graph after an arbitrary
+	# keypress, but the tutorial here isn't as useful as one would like:
+	# https://discourse.julialang.org/t/wait-for-a-keypress/20218/7
 end
 
 
-function inferExAnteAllocationProbability(x::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)::Float64
+function inferExAnteAllocationProbability(x::Function, mirage_CDF_values::Vector{Float64})::Float64
 	# This is the probability q that dashboard x allocates an item to a quantal-responding agent.
+	nonzerotypes = length(mirage_CDF_values) - 1
 	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
-	true_pdf_values = valueCDF.(agent_values)
-	pdfFromCDF!(true_pdf_values)
-	mirage_pdf_values = mirageCDFImageWithIndices(x, true_pdf_values, lambda, nonzerotypes)
+	mirage_pdf_values = mirage_CDF_values
 	pdfFromCDF!(mirage_pdf_values)
-	# The following was the old way of generating the pdf from the CDF. Get rid of it at some point.
-	# mirage_pdf_values = mirageCDFWithIndices.(collect(0:nonzerotypes), x, true_pdf_values, lambda, nonzerotypes)
-	# for i = reverse(2:nonzerotypes + 1)
-	# 	mirage_pdf_values[i] -= mirage_pdf_values[i - 1]
-	# end
 	dashboard_probs = x.(agent_values)
 	return dot(dashboard_probs, mirage_pdf_values)
 end
@@ -411,42 +408,82 @@ function displayMirage(x::Function, valueCDF::Function, lambda::Float64, nonzero
 	plotResults(agent_values, true_cdf_values, mirage_cdf_values)
 end
 
-function startSimulation(numberofsamples::Int64, x_family::Function, theta_initial::Float64, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)
+
+function getExpectedQErrors(theta_granularity::Int64, numberofsamples::Int64, x_family::Function, true_pdf_values::Vector{Float64}, lambda::Float64, nonzerotypes::Int64)::Array{Float64, 2}
+	iterations_to_compute_expected_error = 10
+	output_matrix = Array{Float64, 2}(undef, theta_granularity, theta_granularity)
+	for j in 1:theta_granularity
+		for i in 1:theta_granularity
+			theta_initial = (i - 1) / (theta_granularity - 1)
+			theta_updated = (j - 1) / (theta_granularity - 1)
+			mirage_cdf_values = mirageCDFImageWithIndices(b -> x_family(b, theta_initial), true_pdf_values, lambda, nonzerotypes)
+			mirage_cdf_values_updated_correct = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), true_pdf_values, lambda, nonzerotypes)
+			q_overline = inferExAnteAllocationProbability(b -> x_family(b, theta_updated), mirage_cdf_values_updated_correct)
+
+			expected_error_metric = 0.0
+			for expectation_iter in 1:iterations_to_compute_expected_error
+				empiricalFrequency = generateSamples(numberofsamples, mirage_cdf_values)
+				print("Empirical frequency vector: ")
+				println(empiricalFrequency)
+				# empiricalFrequency = [2.0, 0.0, 0.1, 0.5, 0.2]
+				inferred_value_pdf = inferValueDistributionTest(empiricalFrequency, b -> x_family(b, theta_initial), lambda, nonzerotypes)
+				mirage_cdf_values_updated_inferred = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), inferred_value_pdf, lambda, nonzerotypes)
+				q_overline_hat = inferExAnteAllocationProbability(b -> x_family(b, theta_updated), mirage_cdf_values_updated_inferred)
+				error_metric = abs(q_overline_hat - q_overline)
+				expected_error_metric += error_metric
+			end
+			expected_error_metric /= iterations_to_compute_expected_error
+			output_matrix[i, j] = expected_error_metric
+		end
+	end
+	return output_matrix
+end
+
+function getInferenceError(i::Float64, j::Float64)::Float64
+	return 0.0
+end
+
+function startSimulation(theta_granularity::Int64, numberofsamples::Int64, x_family::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)
 	@assert nonzerotypes >= 1
 	@assert lambda >= 0.0
+	iterations_to_compute_expected_error = 50
+
 	println("Simulation Started!")
 	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
 	true_cdf_values = valueCDF.(agent_values)
 	true_pdf_values = valueCDF.(agent_values)
 	pdfFromCDF!(true_pdf_values)
-	mirage_cdf_values = mirageCDFImageWithIndices(b -> x_family(b, theta_initial), true_pdf_values, lambda, nonzerotypes)
-	empiricalFrequency = generateSamples(numberofsamples, mirage_cdf_values)
-	print("Empirical frequency vector: ")
-	println(empiricalFrequency)
-	# empiricalFrequency = [2.0, 0.0, 0.1, 0.5, 0.2]
-	inferred_value_pdf = inferValueDistributionTest(empiricalFrequency, b -> x_family(b, theta_initial), lambda, nonzerotypes)
+	
+	
 	# Dot product inferred_value_pdf with the matrix of conditional cdfs of a *new* dashboard
 	# return that
 
-	theta_updated = theta_initial * theta_initial
-	mirage_cdf_values_updated = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), inferred_value_pdf, lambda, nonzerotypes)
+	# theta_updated = theta_initial * theta_initial
 
-	theta_granularity = 10
+	# x_thetas = fill(0.0, 0)
+	# y_thetas = fill(0.0, 0)
+	# for i in 0:theta_granularity-1
+	# 	for j in 0:theta_granularity-1
+	# 		# insert x,y coordinates here
+	# 		# TODO: Start work here.
+	# 		# x_thetas.append(1.0)
+	# 	end
+	# end
 
-	x_thetas = fill(0.0, 0)
-	y_thetas = fill(0.0, 0)
-	for i in 0:theta_granularity-1
-		for j in 0:theta_granularity-1
-			# insert x,y coordinates here
-			# TODO: Start work here.
-			# x_thetas.append(1.0)
-		end
-	end
+	x_thetas = collect(0:theta_granularity - 1) ./ (theta_granularity - 1)
+	y_thetas = collect(0:theta_granularity - 1) ./ (theta_granularity - 1)
+
+	# z_errors = [getInferenceError.(x_thetas, y_thetas), y_thetas, x_thetas]
+
+	# println(typeof(z_errors))
+
+
+	z_errors = getExpectedQErrors(theta_granularity, numberofsamples, x_family, true_pdf_values, lambda, nonzerotypes)
 
 	# print("Ex ante allocation probability (q): ")
 	# println(exAnteAllocationProbability(b -> x_family(b, theta_initial), valueCDF, lambda, nonzerotypes))
 	# plotResults(agent_values, true_cdf_values, mirage_cdf_values_updated)
-	visualizeErrors(collect(0:nonzerotypes) ./ nonzerotypes, collect(0:nonzerotypes) ./ nonzerotypes, collect(0:nonzerotypes) ./ nonzerotypes)
+	visualizeErrors(x_thetas, y_thetas, z_errors)
 end
 
 
@@ -462,10 +499,11 @@ function main()
 	# inferValueDistribution(uniformFrequency(nonzerotypes), x, lambda, nonzerotypes)
 	nonzerotypes = 4
 	# inferValueDistributionTest(uniformFrequency(nonzerotypes), x, lambda, nonzerotypes)
+	theta_granularity = 10
 	numberofsamples = 10
 	x_family = straightlineDashboardFamily
 	theta_initial = 0.5
-	startSimulation(numberofsamples, x_family, theta_initial, valueCDF, lambda, nonzerotypes)
+	startSimulation(theta_granularity, numberofsamples, x_family, valueCDF, lambda, nonzerotypes)
 
 	x = exampleDashboard
 	valueCDF = betaCDF(2.0, 2.0)
