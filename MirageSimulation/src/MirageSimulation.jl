@@ -11,6 +11,8 @@ using LinearAlgebra: dot, mul!
 # We're also going to use the Plots package; I think this should be all its relevant functions.
 using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, surface
 # TODO: Weirdly, "display()" isn't imported here but still seems to work? What's up with that?
+# Acquire the ability to do weighted categorical sampling from StatsBase.
+using StatsBase: sample, Weights
 
 
 # CDF section! You can specify new generators for
@@ -25,15 +27,38 @@ function betaCDF(alpha::Float64, beta::Float64)::Function
     return v -> cdf(Beta(alpha, beta), v)
 end
 
-# function mixtureZeroOneCDF(p::Float64)::Function
-# 	return v -> {
-# 		if v < 1.0
-# 			return 1.0 - p
-# 		else
-# 			return 1.0
-# 		end
-# 	}
-# end
+function pointMassCDF(pointmass::Float64)::Function
+	return v ->
+		if (v < pointmass)
+			return 0.0
+		else
+			return 1.0
+		end
+end
+
+function twoPointMassesCDF(pointmass_low::Float64, pointmass_high::Float64, prob_high::Float64)::Function
+	@assert pointmass_high >= pointmass_low
+	return v ->
+	if (v < pointmass_low)
+		return 0.0
+	elseif (v < pointmass_high)
+		return 1.0 - prob_high
+	else
+		return 1.0
+	end
+end
+
+function mixtureZeroOneCDF(p::Float64, lowest::Float64)::Function
+	# p is the probability of getting value 1, lowest is a number \approx 0 which occurs with probability 1 - p.
+	return v -> 
+		if v < lowest
+			return 0.0
+		elseif v < 0.9999
+			return 1.0 - p
+		else
+			return 1.0
+		end
+end
 
 
 # Dashboard section! You can code up new dashboards here and use them in a simulation.
@@ -80,6 +105,28 @@ function postedpriceDashboardFamily(b::Float64, theta::Float64)::Float64
 	else
 		return 0.0
 	end
+end
+
+function splineSigmoidGenerator(p_high::Float64)::Function
+	f = (b::Float64, theta::Float64) -> begin
+		# The theta parameter is 1, minus the ratio of p_low to p_high.
+		@assert theta <= 1
+		@assert theta >= 0
+		@assert b >= 0
+		@assert b <= 1
+		p_low = (1.0 - theta) * p_high
+		normed_b = (b - p_low) / (p_high - p_low)
+		if (b < p_low)
+			return 0.0
+		elseif (b < (p_low + p_high) / 2.0)
+			return 2 * (normed_b * normed_b)
+		elseif (b < p_high)
+			return -1.0 + 2.0 * normed_b * (2.0 - normed_b)
+		else
+			return 1.0
+		end
+	end
+	return f
 end
 
 # function searchForThetaMatchingQ(x_family::Function, pdf_values::Vector{Float64}, q::Float64)
@@ -145,10 +192,43 @@ function mirageCDFImageWithIndices(x::Function, true_pdf_values::Vector{Float64}
 	return mirage_cdf_image
 end
 
+# TODO: Left off here! This new pdf image calculator will be much more performant than the CDF image calculator.
+# It's complete, but you should update the rest of the codebase to use it, since it's so much more performant than `mirageCDFImageWithIndices`.
+function miragePDFImageWithIndices(x::Function, true_pdf_values::Vector{Float64}, lambda::Float64)::Vector{Float64}
+	# Calculates P(bid index == `v_hat_index`) for all possible values of `v_hat_index`.
+	if (isinf(lambda))
+		# Assume that we're using a truthful dashboard.
+		return copy(true_pdf_values)
+	end
+	nonzerotypes = length(true_pdf_values) - 1
+	mirage_pdf_image = Vector{Float64}(undef, length(true_pdf_values))
+	reweighted_value_pdf = Vector{Float64}(undef, length(true_pdf_values))
+	for j in eachindex(reweighted_value_pdf)
+		denominator::Float64 = 0.0
+		for i = 1:j
+			denominator += exp(lambda * utilityWithIndices(j - 1, i - 1, x, nonzerotypes))
+		end
+		reweighted_value_pdf[j] = true_pdf_values[j] / denominator
+	end
+	weightarray::Vector{Float64} = fill(0.0, length(true_pdf_values))
+	for j in eachindex(mirage_pdf_image)
+		for i in j:length(mirage_pdf_image)
+			weightarray[i] = exp(lambda * utilityWithIndices(i - 1, j - 1, x, nonzerotypes))
+		end
+		# println(weightarray)
+		# println()
+		mirage_pdf_image[j] = dot(weightarray, reweighted_value_pdf)
+		weightarray[j] = 0.0
+	end
+	return mirage_pdf_image
+end
+
 function conditionalMirageCDFWithIndices(v_hat_index::Int64, v_index::Int64, x::Function, lambda::Float64, nonzerotypes::Int64)::Float64
 	# Calculates P(bid index <= `v_hat_index` | value index = `v_index`).
 	if (v_hat_index >= v_index)
 		return 1.0
+	elseif (isinf(lambda))
+		return 0.0
 	end
 	weightarray = Vector{Float64}(undef, v_index + 1)
 	for i = eachindex(weightarray)
@@ -255,7 +335,7 @@ function inferValueDistribution(empiricalFrequency::Vector{Float64}, x::Function
 end
 
 function inferValueDistributionFirstOrder(empiricalFrequency::Vector{Float64}, x::Function, lambda::Float64)::Vector{Float64}
-	max_iterations = 1000
+	max_iterations = 10000
 	supremumDistanceNeeded = 0.0000000000000001
 	nonzerotypes = length(empiricalFrequency) - 1
 	gVector = Vector{Float64}(undef, nonzerotypes + 1)
@@ -320,6 +400,13 @@ function inferValueDistributionFirstOrder(empiricalFrequency::Vector{Float64}, x
 			break
 		end
 	end
+	if (supremumDistance >= supremumDistanceNeeded)
+		println("WARNING: Iterative method failed to converge.")
+		print("PDF was still moving by size ")
+		print(supremumDistance)
+		print(" when we needed below ")
+		println(supremumDistanceNeeded)
+	end
 	# println("Got a vector!")
 	# print("Pi vector: ")
 	# println(empiricalFrequency)
@@ -329,8 +416,9 @@ function inferValueDistributionFirstOrder(empiricalFrequency::Vector{Float64}, x
 end
 
 # This is an old iterative method we're no longer using!
-function inferValueDistributionTest(empiricalFrequency::Vector{Float64}, x::Function, lambda::Float64, nonzerotypes::Int64)::Vector{Float64}
-	@assert length(empiricalFrequency) == nonzerotypes + 1
+function inferValueDistributionTest(empiricalFrequency::Vector{Float64}, x::Function, lambda::Float64)::Vector{Float64}
+	# @assert length(empiricalFrequency) == nonzerotypes + 1
+	nonzerotypes = length(empiricalFrequency) - 1
 	# Change iterations to 100 to try to actually converge.
 	# Use iterations=1 to do MLE without the "keep f(i) non-negative" constraint.
 	iterations = 1
@@ -477,14 +565,22 @@ function displayandpause(plotobject)
 end
 
 
-function inferExAnteAllocationProbability(x::Function, mirage_CDF_values::Vector{Float64})::Float64
+function inferExAnteAllocationProbabilityFromCDF(x::Function, mirage_CDF_values::Vector{Float64})::Float64
 	# This is the probability q that dashboard x allocates an item to a quantal-responding agent.
 	nonzerotypes = length(mirage_CDF_values) - 1
 	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
-	mirage_pdf_values = mirage_CDF_values
+	mirage_pdf_values = copy(mirage_CDF_values)
 	pdfFromCDF!(mirage_pdf_values)
 	dashboard_probs = x.(agent_values)
 	return dot(dashboard_probs, mirage_pdf_values)
+end
+
+function inferExAnteAllocationProbability(x::Function, mirage_PDF_values::Vector{Float64})::Float64
+	# This is the probability q that dashboard x allocates an item to a quantal-responding agent.
+	nonzerotypes = length(mirage_PDF_values) - 1
+	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
+	dashboard_probs = x.(agent_values)
+	return dot(dashboard_probs, mirage_PDF_values)
 end
 
 function testprintout(v::Float64, lambda::Float64, nonzerotypes::Int64)
@@ -553,7 +649,7 @@ function getExpectedQErrors(theta_granularity::Int64, numberofsamples::Int64, x_
 			theta_updated = (i - 1) / (theta_granularity - 1)
 			mirage_cdf_values = mirageCDFImageWithIndices(b -> x_family(b, theta_initial), true_pdf_values, lambda, nonzerotypes)
 			mirage_cdf_values_updated_correct = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), true_pdf_values, lambda, nonzerotypes)
-			q_overline = inferExAnteAllocationProbability(b -> x_family(b, theta_updated), mirage_cdf_values_updated_correct)
+			q_overline = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, theta_updated), mirage_cdf_values_updated_correct)
 
 			expected_error_metric = 0.0
 			for expectation_iter in 1:iterations_to_compute_expected_error
@@ -562,7 +658,7 @@ function getExpectedQErrors(theta_granularity::Int64, numberofsamples::Int64, x_
 				# println(empiricalFrequency)
 				inferred_value_pdf = inferValueDistributionFirstOrder(empiricalFrequency, b -> x_family(b, theta_initial), lambda)
 				mirage_cdf_values_updated_inferred = mirageCDFImageWithIndices(b -> x_family(b, theta_updated), inferred_value_pdf, lambda, nonzerotypes)
-				q_overline_hat = inferExAnteAllocationProbability(b -> x_family(b, theta_updated), mirage_cdf_values_updated_inferred)
+				q_overline_hat = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, theta_updated), mirage_cdf_values_updated_inferred)
 				error_metric = abs(q_overline_hat - q_overline)
 				expected_error_metric += error_metric
 			end
@@ -578,6 +674,7 @@ function inferenceQErrorWithEpsEstimationGuarantee(theta_granularity::Int64, sta
 	nonzerotypes = length(true_pdf_values) - 1
 	mirage_cdf_image = mirageCDFImageWithIndices(b -> x_family(b, starting_theta), true_pdf_values, lambda, nonzerotypes)
 	mirage_cdf_image_upper = min.(mirage_cdf_image .+ epsilon, 1.0)
+	mirage_cdf_image_upper[length(mirage_cdf_image_upper)] = 1.0
 	mirage_cdf_image_lower = max.(mirage_cdf_image .- epsilon, 0.0)
 	pdfFromCDF!(mirage_cdf_image_upper)
 	pdfFromCDF!(mirage_cdf_image_lower)
@@ -590,31 +687,42 @@ function inferenceQErrorWithEpsEstimationGuarantee(theta_granularity::Int64, sta
 	for i in 1:theta_granularity
 		theta_check = (i - 1) / (theta_granularity - 1)
 		mirage_cdf_image_upper_check = mirageCDFImageWithIndices(b -> x_family(b, theta_check), true_pdf_image_upper, lambda, nonzerotypes)
-		q_upper_check = inferExAnteAllocationProbability(b -> x_family(b, theta_check), mirage_cdf_image_upper_check)
+		q_upper_check = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, theta_check), mirage_cdf_image_upper_check)
 		if (abs(q_upper_check - q_target) < smallest_q_error_so_far_upper)
 			closest_theta_so_far_upper = theta_check
 			smallest_q_error_so_far_upper = abs(q_upper_check - q_target)
 		end
 		mirage_cdf_image_lower_check = mirageCDFImageWithIndices(b -> x_family(b, theta_check), true_pdf_image_lower, lambda, nonzerotypes)
-		q_lower_check = inferExAnteAllocationProbability(b -> x_family(b, theta_check), mirage_cdf_image_lower_check)
+		q_lower_check = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, theta_check), mirage_cdf_image_lower_check)
 		if (abs(q_lower_check - q_target) < smallest_q_error_so_far_lower)
 			closest_theta_so_far_lower = theta_check
 			smallest_q_error_so_far_lower = abs(q_lower_check - q_target)
 		end
 	end
 	actual_mirage_cdf_image_upper = mirageCDFImageWithIndices(b -> x_family(b, closest_theta_so_far_upper), true_pdf_values, lambda, nonzerotypes)
-	actual_ex_ante_upper = inferExAnteAllocationProbability(b -> x_family(b, closest_theta_so_far_upper), actual_mirage_cdf_image_upper)
+	actual_ex_ante_upper = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, closest_theta_so_far_upper), actual_mirage_cdf_image_upper)
 	ex_ante_error_upper = abs(q_target - actual_ex_ante_upper)
 	actual_mirage_cdf_image_lower = mirageCDFImageWithIndices(b -> x_family(b, closest_theta_so_far_lower), true_pdf_values, lambda, nonzerotypes)
-	actual_ex_ante_lower = inferExAnteAllocationProbability(b -> x_family(b, closest_theta_so_far_lower), actual_mirage_cdf_image_lower)
+	actual_ex_ante_lower = inferExAnteAllocationProbabilityFromCDF(b -> x_family(b, closest_theta_so_far_lower), actual_mirage_cdf_image_lower)
 	ex_ante_error_lower = abs(q_target - actual_ex_ante_lower)
+	if (ex_ante_error_upper > ex_ante_error_lower)
+		actual_theta_new = closest_theta_so_far_upper
+	else
+		actual_theta_new = closest_theta_so_far_lower
+	end
 	ex_ante_error = max(ex_ante_error_upper, ex_ante_error_lower)
+	print("Initial theta value: ")
+	println(starting_theta)
+	print("New theta value to achieve q target: ")
+	println(actual_theta_new)
 	print("q target: ")
 	println(q_target)
 	print("epsilon (max supremum distance between estimated and true mirage CDF): ")
 	println(epsilon)
 	print("Ex ante error: ")
 	println(ex_ante_error)
+	# print("Ex ante error divided by q target")
+	println("------------------")
 end
 
 
@@ -637,7 +745,7 @@ function startSimulation(theta_granularity::Int64, numberofsamples::Int64, x_fam
 	visualizeErrors(x_thetas, y_thetas, z_errors)
 end
 
-function calculateWelfare(theta_granularity::Int64, x_family::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)
+function calculateWelfareOfFamily(theta_granularity::Int64, x_family::Function, valueCDF::Function, lambda::Float64, nonzerotypes::Int64)
 	@assert nonzerotypes >= 1
 	@assert lambda >= 0.0
 	@assert theta_granularity > 1
@@ -740,8 +848,449 @@ function calculateWelfare(theta_granularity::Int64, x_family::Function, valueCDF
 end
 
 
+function testingTheSigmoidGenerator()
+	lambda = 0.15
+
+	p_high = 0.3
+	chosenSpline = splineSigmoidGenerator(p_high)
+	println("Here's the dashboard:")
+	for i = 0:100
+		println(chosenSpline(1.0 - (i / 100.0), 0.2))
+	end
+	println(chosenSpline(0.4, 0.2))
+	println("^^ This is the dashboard.")
+	# TODO: This is where we left off!
+	println("Press Enter to continue.")
+	junk = readline()
+end
+
+# function getThetaAssociatedWithQ(target_q::Float64, theta_granularity::Int64, dashboard_family::Function, value_pdf::Vector{Float64}, lambda::Float64)::Float64
+# 	# TODO: This seems to be a duplicate function of findThetaWhichObtainsQ! You might want to deduplicate this code.
+# 	# This version seems better than the other one, because of its usage of theta_granularity as an explicit parameter.
+# 	# But it also doesn't output a tight lower bound, which might be less good?
+#	# TODO: Delete this function! It's old, glitchy, and bad. It's entirely superseded by findThetaWhichObtainsQ.
+
+# 	# IMPORTANT: This function assumes that the allocation probability is *increasing* in theta!
+# 	# Dashboard families must be defined so that this assumption holds true.
+# 	theta_index_high = theta_granularity
+# 	theta_index_low = 0
+
+# 	while (theta_index_high > theta_index_low)
+# 		theta = (theta_index_high + theta_index_low) / (2.0 * theta_granularity)
+# 		mirage_cdf = mirageCDFImageWithIndices(b -> dashboard_family(b, theta), value_pdf, lambda, length(value_pdf) - 1)
+# 		mid_q = inferExAnteAllocationProbabilityFromCDF(b -> dashboard_family(b, theta), mirage_cdf)
+# 		if (mid_q > target_q)
+# 			theta_index_high = round((theta_index_high + theta_index_low) / 2.0)
+# 		else
+# 			theta_index_low = round((theta_index_high + theta_index_low) / 2.0)
+# 		end
+# 	end
+# 	# mirage_cdf_high = mirageCDFImageWithIndices(b -> dashboard_family(b, theta_high), value_pdf, lambda, length(value_pdf) - 1)
+# 	# mirage_cdf_low = mirageCDFImageWithIndices(b -> dashboard_family(b, theta_low), value_pdf, lambda, length(value_pdf) - 1)
+
+# 	return theta
+# end
+
+function getIndexSamplesFromPdf(pdf_to_be_sampled, num_samples::Int64)
+	# Sample num_samples indices from a distribution. (Usually the true value distribution or the mirage distribution.)
+	# TODO: Make this take an rng parameter, like Xoshiro!
+	return sample(1:length(pdf_to_be_sampled), Weights(pdf_to_be_sampled), num_samples)
+end
+
+function frequencyFromIndexSamples(sample_indices::Array{Int64}, nonzerotypes)::Array{Float64}
+	# Convert a index samples vector into an empirical frequency vector (i.e. a PDF).
+	countVector = fill(0.0, nonzerotypes + 1)
+	for i in sample_indices
+		countVector[i] += 1
+	end
+	# println(countVector ./ length(sample_indices))
+	return countVector ./ length(sample_indices)
+	# return fill(1.0 / (nonzerotypes + 1), nonzerotypes + 1)
+end
+
+function findThetaWhichObtainsQ(x_family::Function, q_target::Float64, value_pdf::Vector{Float64}, lambda::Float64)::Float64
+	# Uses binary search to find a parameter theta of a dashboard family which gives allocation probability q_target.
+	# If there doesn't exist an exact theta value which provides this exact allocation probability, we output something *right* below it.
+	# That way, ex-ante supply constraints are always satisfied, even if they aren't perfectly tight.
+
+	nonzerotypes = length(value_pdf) - 1
+	# Hard code the theta granularity, which determines how carefully we search through parameter space, to be
+	# at least the number of non-zero agent types times the maximal constant multiplier we can use.
+	# We compute the highest multiplier with integer division.
+	highest_integer_multiplier = div(typemax(Int64), nonzerotypes)
+	# ... then we multiply it by the number of non-zero agent types.
+	theta_granularity = highest_integer_multiplier * nonzerotypes
+	# This gives us an integer number of theta values which can fall in between different thetas equal to the type.
+	# This is particularly elegant for computing thetas from the posted price family (assuming that the tie-breaking rules work right.)
+	@assert theta_granularity > 0
+
+	# IMPORTANT: This function assumes that the allocation probability is *increasing* in theta!
+	# Dashboard families must be defined so that this assumption holds true.
+
+	# theta_index_low and theta_index_high are the boundaries of the binary search region. They get closer to one another as we proceed.
+	theta_index_low = 0
+	theta_index_high = theta_granularity
+
+	while (theta_index_low < theta_index_high)
+		# theta_index_mid is where we target for testing. It's designed to both (a) round up and (b) to avoid integer overflow.
+		# println("Divs calculating...")
+		theta_index_mid = theta_index_high - div(theta_index_high - theta_index_low, 2)
+		theta_guess::Float64 = theta_index_mid / theta_granularity
+		# println("Curried function calculating...")
+		x = b -> x_family(b, theta_guess)
+
+
+		# print("Theta low: ")
+		# println(theta_index_low / theta_granularity)
+		# print("Theta high: ")
+		# println(theta_index_high / theta_granularity)
+
+		# println("Mirage CDF calculating...")
+		# mirage_cdf = mirageCDFImageWithIndices(x, value_pdf, lambda, nonzerotypes)
+		# println(mirage_cdf)
+		# println("q_guess calculating...")
+		# q_guess = inferExAnteAllocationProbabilityFromCDF(x, mirage_cdf)
+
+		# println("Mirage PDF calculating...")
+		mirage_pdf = miragePDFImageWithIndices(x, value_pdf, lambda)
+		# println("q_guess calculating...")
+		q_guess = inferExAnteAllocationProbability(x, mirage_pdf)
+
+		# mirage_cdf_to_pdf = copy(mirage_cdf)
+		# pdfFromCDF!(mirage_cdf_to_pdf)
+		# println(mirage_cdf_to_pdf)
+		# println(maximum(abs.(mirage_cdf_to_pdf - mirage_pdf)))
+		# println(sum(mirage_cdf_to_pdf))
+		# println(sum(mirage_pdf))
+		# println(sum(value_pdf))
+		
+
+		# print("Q guess: ")
+		# println(q_guess)
+		# print("Q target: ")
+		# println(q_target)
+
+		# Some notes: This function will successfully return the highest theta that produces a q_guess which satisfies the ex-ante supply constraint.
+		# This even works in cases where there is no precise theta which gives us the desired ex-ante allocation probability,
+		# or in cases where there are multiple theta that produce allocation probabilities exactly equal to q_target.
+		# In particular, it will always output theta = 1.0 when q_target was set to 1.0. However, it may not always output theta = 0.0 when q_target = 0.0.
+		# If there are no sufficiently low parameters theta which allow you to satisfy a low q_target, the function returns theta = 0.0.
+		if (q_guess <= q_target)
+			theta_index_low = theta_index_mid
+		else
+			theta_index_high = theta_index_mid - 1
+		end
+	end
+	# println(theta_index_low / theta_granularity)
+
+	# Return a (hopefully very tight) lower bound on the correct theta parameter.
+	return theta_index_low / theta_granularity
+end
+
+function calculateWelfare(x::Function, true_pdf_values::Vector{Float64}, lambda::Float64)::Float64
+	welfare_counter = 0.0
+	nonzerotypes = length(true_pdf_values) - 1
+	agent_values = collect(0:nonzerotypes) ./ nonzerotypes
+	for i in eachindex(agent_values)
+		conditional_allocation = 0.0
+		for j in eachindex(agent_values)
+			conditional_allocation += x(agent_values[j]) * conditionalMiragepdfWithIndices(j - 1, i - 1, x, lambda, nonzerotypes)
+		end
+		welfare_counter += true_pdf_values[i] * agent_values[i] * conditional_allocation
+	end
+	return welfare_counter
+end
+
+function sigmoidEstimationProcedure(true_cdf_values::Vector{Float64}, q::Float64, w::Float64, lambda::Float64, num_samples::Int64, num_rounds::Int64)
+	# TODO: Make these better initial estimated parameters! Right now they're pretty randomly chosen. You do want them hard-coded, just...
+	# ... not quite these initial estimates.
+	p_high_initial = 0.7
+	p_low_initial = 0.2
+
+	true_pdf_values = copy(true_cdf_values)
+	pdfFromCDF!(true_pdf_values)
+
+	nonzerotypes = length(true_pdf_values) - 1
+
+	# Note: Normally, for the 1/2 * 3/4 approximation, w should equal 1/2.
+
+	# Keep track of inference error.
+	sum_of_q_abs_errors = 0.0
+	# Keep track of the fraction of the time we select an ex-ante allocation probability that is too high.
+	num_rounds_too_high_exante_allocation_prob = 0
+	# Keep track of the total overallocation probability across all rounds.
+	cumulative_overallocation_probability = 0.0
+
+	# Keep track of sums of apx welfare and opt welfare.
+	# We plan to sum these across all rounds, and then divide one by the other.
+	sum_of_apx_welfares = 0.0
+	# optimal_br_postedprice = b -> postedpriceDashboardFamily(b, findThetaWhichObtainsQ(postedpriceDashboardFamily, q, true_pdf_values, Inf))
+	opt_br_welfare = 0.0
+	# sanity_check = 0.0
+	for i in reverse(eachindex(true_cdf_values))
+		# println(sanity_check)
+		F_iMinus1::Float64 = (i > 1) ? true_cdf_values[i - 1] : 0.0
+		if (q < 1.0 - F_iMinus1)
+			# q >= 1.0 - true_cdf_values[i]
+			# q == 1.0 - true_cdf_values[i] + tiny_alloc_prob
+			# tiny_alloc_prob = q - 1.0 + true_cdf_values[i]
+			tiny_alloc_prob = q - 1.0 + true_cdf_values[i]
+			opt_br_welfare += (i - 1) * tiny_alloc_prob
+			# sanity_check += tiny_alloc_prob
+			break
+		end
+		opt_br_welfare += (i - 1) * true_pdf_values[i]
+		# sanity_check += true_pdf_values[i]
+	end
+	# print("Sanity check: ")
+	# println(sanity_check)
+	opt_br_welfare /= nonzerotypes
+	# opt_br_welfare = calculateWelfare(optimal_br_postedprice, true_pdf_values, Inf)
+	print("Optimal welfare: ")
+	println(opt_br_welfare)
+
+	print("Target q: ")
+	println(q)
+
+	print("w: ")
+	println(w)
+
+	print("lambda: ")
+	println(lambda)
+
+
+	previous_spline = b -> splineSigmoidGenerator(p_high_initial)(b, 1.0 - (p_low_initial / p_high_initial))
+
+	for i in 1:num_rounds
+		# Use the sigmoid from the last round (t - 1) to get n samples that we use to estimate the value distribution.
+		mirage_pdf_image = miragePDFImageWithIndices(previous_spline, true_pdf_values, lambda)
+		# mirage_pdf_image = mirageCDFImageWithIndices(previous_spline, true_pdf_values, lambda, nonzerotypes)
+		# pdfFromCDF!(mirage_pdf_image)
+		empirical_samples = getIndexSamplesFromPdf(mirage_pdf_image, num_samples)
+		# TODO: Confirm that the following line works and is not buggy!
+		empirical_frequency_vector = frequencyFromIndexSamples(empirical_samples, nonzerotypes)
+		# Use the samples from the mirage to infer the maximum-likelihood estimated value pdf.
+		# TODO: Confirm that this estimation method is functional!
+		estimated_value_pdf = inferValueDistributionFirstOrder(empirical_frequency_vector, previous_spline, lambda)
+		# estimated_value_pdf = copy(mirage_pdf_image)
+
+		# We now have an estimate of the value distribution.
+		# Assuming that this estimate is correct, proceed to the steps in the following section:
+
+		
+		# Find out what p_low and p_high are needed to achieve a particular allocation probability of a posted price dashboard.
+		# Use a posted price dashboard, do binary search to find the price p_high
+		# at which the allocation prob is wq where w is a constant in [0, 1]
+		# Note that we use 1 - theta to calculate p_high, since the theta parameter for a posted price dashboard is "1 minus the price."
+		p_high = 1.0 - findThetaWhichObtainsQ(postedpriceDashboardFamily, w * q, estimated_value_pdf, lambda)
+		print("P high: ")
+		println(p_high)
+		# Note: We have a proof that binary search should be successful for locating the right theta to obtain allocation probability q,
+		# which works by showing that the allocation probability is monotone increasing in theta.
+
+		# Use a sigmoid dashboard, which we make the sigmoid dashboard a curried function of p_high, to find the price p_low which
+		# makes the overall sigmoid dashboard have ex-ante allocation probability q.
+		lower_theta = findThetaWhichObtainsQ(splineSigmoidGenerator(p_high), q, estimated_value_pdf, lambda)
+		p_low = p_high * (1.0 - lower_theta)
+		print("P low: ")
+		println(p_low)
+
+		# Note that both these simulations to find p_high and p_low are not run on actual agents. Instead, they're run on the inferred value distribution we
+		# constructed from the data collected by a sigmoid dashboard in the previous timestep (t - 1).
+
+		# Construct the sigmoid dashboard from p_high and p_low (i.e. lower_theta).
+		chosenSpline = b -> splineSigmoidGenerator(p_high)(b, lower_theta)
+
+		# What do we do with a sigmoid dashboard now?
+		# Sanity check: make sure the sigmoid with p_low and p_high has an allocation probability in between
+		# q and wq.
+		mirage_pdf_image = miragePDFImageWithIndices(chosenSpline, true_pdf_values, lambda)
+		allocation_prob = inferExAnteAllocationProbability(chosenSpline, mirage_pdf_image)
+		# mirage_cdf_image = mirageCDFImageWithIndices(chosenSpline, true_pdf_values, lambda, nonzerotypes)
+		# allocation_prob = inferExAnteAllocationProbabilityFromCDF(chosenSpline, mirage_cdf_image)
+		print("Allocation probability: ")
+		println(allocation_prob)
+
+		# If we have an ex-ante allocation probability higher than our supply constraint/target, do an adjustment where we
+		# cancel the auction entirely with some probability, getting 0 welfare when this occurs.
+		# This is a brute-force, sledgehammer-ey way to force the ex-ante allocation probability below our target.
+		adjustment = (q < allocation_prob) ? (q / allocation_prob) : 1.0
+
+		# Calculate/tally sum of welfares of spline sigmoid dashboard.
+		current_welfare = adjustment * calculateWelfare(chosenSpline, true_pdf_values, lambda)
+		print("Current welfare: ")
+		println(current_welfare)
+		print("Optimal welfare: ")
+		println(opt_br_welfare)
+		print("Welfare ratio compared to BR at allocation probability q: ")
+		println(current_welfare / opt_br_welfare)
+		sum_of_apx_welfares += current_welfare
+
+		# Calculate/tally inference error.
+		sum_of_q_abs_errors += abs(allocation_prob - q)
+		print("Absolute inference error: ")
+		println(abs(allocation_prob - q))
+
+		if (allocation_prob > q)
+			print("A bad event occurred! We overallocated by a probability margin of ")
+			println(allocation_prob - q)
+		end
+
+		# Update the counter of how many times the ex-ante allocation probability has been above our target.
+		num_rounds_too_high_exante_allocation_prob += (allocation_prob > q)
+
+		# If we had a too-high ex-ante allocation probability, record the fraction of agents that would have been allocated but now can't.
+		# We're keeping track of the sum of these values to compute their average value across rounds at the end.
+		cumulative_overallocation_probability += max(0.0, allocation_prob - q)
+		# cumulative_overallocation_probability += (allocation_prob > q) * (allocation_prob - q)
+
+		# Use sigmoid dashboard in next round (t) to get another n samples, and get another estimate of the value distribution.
+		previous_spline = chosenSpline
+	end
+
+	sum_of_opt_br_welfares = num_rounds * opt_br_welfare
+	# print("Averaged welfare ratio: ")
+	# println(sum_of_apx_welfares / sum_of_opt_br_welfares)
+
+	# print("Worst-case welfare ratio assuming that we fit p_high correctly: ")
+	# println(w * 3/4)
+
+	# print("Average absolute inference error: ")
+	# println(sum_of_q_abs_errors / num_rounds)
+
+	# print("Fraction of rounds where the ex-ante allocation probability was too high: ")
+	# println(num_rounds_too_high_exante_allocation_prob / num_rounds)
+
+	# print("Expected fraction of agents who were meant to be allocated among the q fraction, but couldn't be because we made the ex-ante allocation probability too high: ")
+	# println(cumulative_overallocation_probability / num_rounds)
+	
+	# mirage_cdf_image_upper = min.(mirage_cdf_image .+ epsilon, 1.0)
+	# mirage_cdf_image_upper[length(mirage_cdf_image_upper)] = 1.0
+	# mirage_cdf_image_lower = max.(mirage_cdf_image .- epsilon, 0.0)
+	# pdfFromCDF!(mirage_cdf_image_upper)
+	# pdfFromCDF!(mirage_cdf_image_lower)
+	# true_pdf_image_upper = inferValueDistributionFirstOrder(mirage_cdf_image_upper, b -> x_family(b, starting_theta), lambda)
+	return SigmoidSummary(
+		sum_of_apx_welfares / sum_of_opt_br_welfares,
+		w * 3/4,
+		sum_of_q_abs_errors / num_rounds,
+		num_rounds_too_high_exante_allocation_prob / num_rounds,
+		cumulative_overallocation_probability / num_rounds
+		)
+end
+
+struct SigmoidSummary
+	welfare_ratio::Float64
+	worst_case_welfare_ratio::Float64
+	average_inference_error::Float64
+	fraction_rounds_too_high_exante_allocation_prob::Float64
+	average_overallocation_probability::Float64
+end
+
+function sigmoidSummaryPrint(sigmoid_summary::SigmoidSummary)
+	print("Averaged welfare ratio: ")
+	println(sigmoid_summary.welfare_ratio)
+
+	print("Worst-case welfare ratio assuming that we fit p_high correctly: ")
+	println(sigmoid_summary.worst_case_welfare_ratio)
+
+	print("Average absolute inference error: ")
+	println(sigmoid_summary.average_inference_error)
+
+	print("Fraction of rounds where the ex-ante allocation probability was too high: ")
+	println(sigmoid_summary.fraction_rounds_too_high_exante_allocation_prob)
+
+	print("Expected fraction of agents who were meant to be allocated among the q fraction, but couldn't be because we made the ex-ante allocation probability too high: ")
+	println(sigmoid_summary.average_overallocation_probability)
+end
+
+function plotXandY(title_name::AbstractString, x_axis_label::AbstractString, y_axis_label::AbstractString, x_axis_values::Vector{Float64}, y_axis_values::Vector{Float64})
+	ourplot = plot(x_axis_values, [y_axis_values], label=[y_axis_label], lw=[1])
+	plot!(ourplot, legend=:outerbottom, legendcolumns=2)
+	# Note: This function is only for plotting things where the x-axis values are in [0, 1].
+	xlims!(ourplot, 0, 1)
+	title!(ourplot, title_name)
+	xlabel!(ourplot, x_axis_label)
+	ylabel!(ourplot, y_axis_label)
+	println("Got to the printing phase")
+	displayandpause(ourplot)
+	println("^^ Actually printed")
+	# TODO: This isn't actually printing a plot! Why on Earth not????
+end
+
 function main()
 	jokeyIntroSection()
+	# testingTheSigmoidGenerator();
+
+	# valueCDF = betaCDF(1.0, 20.0)
+	valueCDF = pointMassCDF(1.0 / 21.0)
+	nonzerotypes = 90
+	true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	# Fix parameters q and w at the start.
+	# Note: We're trying to make q here a teeny bit higher than what would be at the mean for the value distribution.
+	q = 1.0 / 22
+	w = 0.5
+	lambda = 14.0
+	num_samples = 20
+	num_rounds = 10
+	# sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+
+
+	valueCDF = betaCDF(2.0, 10.0)
+	nonzerotypes = 90
+	true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	# Fix parameters q and w at the start.
+	q = 0.6
+	w = 0.1
+	lambda = 0.0
+	num_samples = 20
+	num_rounds = 10
+	# sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+	# sigmoidSummaryPrint(sigmoid_summary)
+
+
+	# Generate a graph for every lambda \in [0, +inf)
+	# Iterate through w \in [0, 1]
+	# // Search through all F and q values
+	# // Alternative: Search through all F in Beta(alpha, beta) for bounded integer (alpha, beta)
+	# Plot 1 - E_{v \sim F}[| \hat{q} - q |] that we observe from the simulation
+	# // (Take the maximum E_{v \sim F}[| \hat{q} - q |] over all q and F.)
+
+	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
+	num_samples = 10
+	num_lambdas = 2
+	num_ws = 20
+	num_rounds = 100
+	x_axis_values = Vector{Float64}(undef, num_ws)
+	y_axis_values = Vector{Float64}(undef, num_ws)
+	for i in 1:num_lambdas
+		@assert num_lambdas > 1
+		@assert num_ws > 1
+		temp_x::Float64 = (i - 1) / (num_lambdas - 1)
+		lambda::Float64 = Inf
+		if (temp_x < 1.0)
+			lambda = temp_x / (1.0 - temp_x)
+		end
+		for j in 1:num_ws
+			w = (j - 1) / (num_ws - 1)
+			# TODO: Search for the worst-case distribution F and the worst-case q.
+			# valueCDF = betaCDF(2.0, 10.0)
+			valueCDF = twoPointMassesCDF(0.25, 0.75, 0.5)
+			nonzerotypes = 90
+			true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+			# Fix parameters q and w at the start.
+			q = 0.6
+			sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+			# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
+			y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
+			x_axis_values[j] = w
+			y_axis_values[j] = y_axis_datum
+		end
+		# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
+		plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
+	end
+
+
 	x = identityDashboard
 	# valueCDF = betaCDF(2.0, 2.0)
 	# valueCDF = betaCDF(100.0, 3.0)
@@ -754,19 +1303,31 @@ function main()
 	# Now let's test some inference procedures!
 	# inferValueDistribution(uniformFrequency(nonzerotypes), x, lambda, nonzerotypes)
 	nonzerotypes = 10
-	# inferValueDistributionTest(uniformFrequency(nonzerotypes), x, lambda, nonzerotypes)
+	# inferValueDistributionTest(uniformFrequency(nonzerotypes), x, lambda)
 	theta_granularity = 100
 	numberofsamples = 100
 	x_family = straightlineDashboardFamily
-	# x_family = postedpriceDashboardFamilys
+	# x_family = postedpriceDashboardFamily
 	# startSimulation(theta_granularity, numberofsamples, x_family, valueCDF, lambda, nonzerotypes)
-	# calculateWelfare(theta_granularity, x_family, valueCDF, lambda, nonzerotypes)
+	# calculateWelfareOfFamily(theta_granularity, x_family, valueCDF, lambda, nonzerotypes)
+
+	lambda = 0.0
+	nonzerotypes = 20
+	theta_granularity = 10000
+	x_family = straightlineDashboardFamily
+	# x_family = postedpriceDashboardFamily
+	# valueCDF = mixtureZeroOneCDF(0.0001, 0.0001)
+	valueCDF = betaCDF(2.0, 20.0)
+	# startSimulation(theta_granularity, numberofsamples, x_family, valueCDF, lambda, nonzerotypes)
+	calculateWelfareOfFamily(theta_granularity, x_family, valueCDF, lambda, nonzerotypes)
+
 
 	theta_granularity = 100
 	starting_theta = 0.5
 	q_target = 0.3
 	epsilon = 0.02
-	x_family = straightlineDashboardFamily
+	# x_family = straightlineDashboardFamily
+	x_family = postedpriceDashboardFamily
 	valueCDF = betaCDF(2.0, 10.0)
 	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
 	pdfFromCDF!(true_pdf_values)
@@ -776,6 +1337,54 @@ function main()
 	epsilon = 0.2
 	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
 
+	valueCDF = betaCDF(10.0, 2.0)
+	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	pdfFromCDF!(true_pdf_values)
+	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+	# theta_granularity = 100000
+	# q_target = 0.00001
+	# inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+	# q_target = 1.0 - 0.00001
+	# inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+	valueCDF = betaCDF(10.0, 2.0)
+	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	pdfFromCDF!(true_pdf_values)
+	theta_granularity = 10000
+	starting_theta = 0.001
+	q_target = 0.5
+	epsilon = 0.002
+	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+	valueCDF = betaCDF(10.0, 2.0)
+	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	pdfFromCDF!(true_pdf_values)
+	theta_granularity = 10000
+	starting_theta = 1.0 - 0.001
+	q_target = 0.5
+	epsilon = 0.002
+	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+
+	valueCDF = betaCDF(2.0, 10.0)
+	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	pdfFromCDF!(true_pdf_values)
+	theta_granularity = 10000
+	starting_theta = 0.001
+	q_target = 0.5
+	epsilon = 0.002
+	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
+
+	valueCDF = betaCDF(2.0, 10.0)
+	true_pdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	pdfFromCDF!(true_pdf_values)
+	theta_granularity = 10000
+	starting_theta = 1.0 - 0.001
+	q_target = 0.5
+	epsilon = 0.002
+	inferenceQErrorWithEpsEstimationGuarantee(theta_granularity, starting_theta, q_target, epsilon, x_family, true_pdf_values, lambda)
 
 
 	# x = exampleDashboard
