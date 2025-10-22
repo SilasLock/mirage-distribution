@@ -5,13 +5,15 @@
 
 # This activates the MirageSimulation environment, which must be located in the same
 # directory as this init.jl script.
-using Pkg: activate, instantiate
+using Pkg: activate, instantiate, add
 pathOfThisScript = @__DIR__ # Macro for acquiring directory of this script.
-activate(pathOfThisScript * "\\" * "MirageSimulation", io=devnull)
+projectPath = joinpath(pathOfThisScript, "MirageSimulation")
+activate(projectPath, io=devnull)
 # Observe that we suppress the annoying text usually caused with activate() by using io=devnull.
 instantiate()
 # We're, at present, not choosing to suppress the precompilation progress bar that
-# comes with the instantiate() function.
+# comes with the instantiate() function. That would be:
+# instantiate(io=devnull)
 
 # Activate the simulation through the main() function.
 using MirageSimulation

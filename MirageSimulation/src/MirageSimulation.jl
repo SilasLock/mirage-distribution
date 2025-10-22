@@ -13,6 +13,8 @@ using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, surface
 # TODO: Weirdly, "display()" isn't imported here but still seems to work? What's up with that?
 # Acquire the ability to do weighted categorical sampling from StatsBase.
 using StatsBase: sample, Weights
+# Try to import the Julia profiler for use with the @profile macro.
+using Profile
 
 
 # CDF section! You can specify new generators for
@@ -1280,6 +1282,7 @@ function main()
 			true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
 			# Fix parameters q and w at the start.
 			q = 0.6
+			@profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
 			sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
 			# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
 			y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
