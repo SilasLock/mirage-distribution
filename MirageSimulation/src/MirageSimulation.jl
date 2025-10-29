@@ -9,13 +9,15 @@ using Distributions: Beta, cdf
 # Do the same for the "dot" function from the LinearAlgebra package.
 using LinearAlgebra: dot, mul!
 # We're also going to use the Plots package; I think this should be all its relevant functions.
-using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, surface
+using Plots: plot, plot!, xlims!, title!, xlabel!, ylabel!, zlabel!, surface, savefig
 # TODO: Weirdly, "display()" isn't imported here but still seems to work? What's up with that?
 # Acquire the ability to do weighted categorical sampling from StatsBase.
 using StatsBase: sample, Weights
 # Try to import the Julia profiler for use with the @profile macro.
 using Profile
 
+# This is a temporary hack to stop pausing on image displays when using a remote machine.
+not_using_a_remote_machine = false
 
 # CDF section! You can specify new generators for
 # the agent value distributions in here.
@@ -337,6 +339,7 @@ function inferValueDistribution(empiricalFrequency::Vector{Float64}, x::Function
 end
 
 function inferValueDistributionFirstOrder(empiricalFrequency::Vector{Float64}, x::Function, lambda::Float64)::Vector{Float64}
+	# This algorithm is basically a variant of the EM algorithm, and it has quite a poor convergence rate.
 	max_iterations = 10000
 	supremumDistanceNeeded = 0.0000000000000001
 	nonzerotypes = length(empiricalFrequency) - 1
@@ -558,9 +561,11 @@ function visualizeErrors(theta_initials::Vector{Float64}, theta_updateds::Vector
 end
 
 function displayandpause(plotobject)
-	display(plotobject)
-	println("Press ENTER when you're ready to stop looking at the plot.")
-	junk = readline()
+	if (not_using_a_remote_machine)
+		display(plotobject)
+		println("Press ENTER when you're ready to stop looking at the plot.")
+		junk = readline()
+	end
 	# It would be really nice to exit a given graph after an arbitrary
 	# keypress, but the tutorial here isn't as useful as one would like:
 	# https://discourse.julialang.org/t/wait-for-a-keypress/20218/7
@@ -1220,6 +1225,19 @@ function plotXandY(title_name::AbstractString, x_axis_label::AbstractString, y_a
 	# TODO: This isn't actually printing a plot! Why on Earth not????
 end
 
+function plotXandYandSave(title_name::AbstractString, x_axis_label::AbstractString, y_axis_label::AbstractString, x_axis_values::Vector{Float64}, y_axis_values::Vector{Float64})
+	ourplot = plot(x_axis_values, [y_axis_values], label=[y_axis_label], lw=[1])
+	plot!(ourplot, legend=:outerbottom, legendcolumns=2)
+	# Note: This function is only for plotting things where the x-axis values are in [0, 1].
+	xlims!(ourplot, 0, 1)
+	title!(ourplot, title_name)
+	xlabel!(ourplot, x_axis_label)
+	ylabel!(ourplot, y_axis_label)
+	pathOfThisScript = @__DIR__ # Macro for acquiring directory of this script.
+	file_to_be_saved = joinpath(pathOfThisScript, "..", "..", "output_images", title_name * ".svg")
+	savefig(ourplot, file_to_be_saved)
+end
+
 function main()
 	jokeyIntroSection()
 	# testingTheSigmoidGenerator();
@@ -1261,8 +1279,8 @@ function main()
 	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
 	num_samples = 10
 	num_lambdas = 2
-	num_ws = 20
-	num_rounds = 100
+	num_ws = 2
+	num_rounds = 1
 	x_axis_values = Vector{Float64}(undef, num_ws)
 	y_axis_values = Vector{Float64}(undef, num_ws)
 	for i in 1:num_lambdas
@@ -1290,7 +1308,8 @@ function main()
 			y_axis_values[j] = y_axis_datum
 		end
 		# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
-		plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
+		# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
+		plotXandYandSave("Lambda = " * string(lambda) * ", q = " * string(q), "w", "1 - overallocation error", x_axis_values, y_axis_values)
 	end
 
 
