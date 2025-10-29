@@ -1278,9 +1278,9 @@ function main()
 
 	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
 	num_samples = 10
-	num_lambdas = 2
-	num_ws = 2
-	num_rounds = 1
+	num_lambdas = 10
+	num_ws = 20
+	num_rounds = 100
 	x_axis_values = Vector{Float64}(undef, num_ws)
 	y_axis_values = Vector{Float64}(undef, num_ws)
 	for i in 1:num_lambdas
@@ -1300,7 +1300,8 @@ function main()
 			true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
 			# Fix parameters q and w at the start.
 			q = 0.6
-			@profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+			# @profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+			sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
 			sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
 			# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
 			y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
