@@ -1225,12 +1225,26 @@ function plotXandY(title_name::AbstractString, x_axis_label::AbstractString, y_a
 	# TODO: This isn't actually printing a plot! Why on Earth not????
 end
 
-function plotXandYandSave(title_name::AbstractString, x_axis_label::AbstractString, y_axis_label::AbstractString, x_axis_values::Vector{Float64}, y_axis_values::Vector{Float64})
+struct SimMetadata
+	num_samples:: Int64
+	lambda:: Float64
+	num_ws:: Int64
+	num_rounds:: Int64
+end
+
+struct SimTempMetadata
+	distribution_name:: AbstractString
+	q:: Float64
+end
+
+function plotXandYandSave(title_name::AbstractString, metadata::SimMetadata, temp_metadata::SimTempMetadata, x_axis_label::AbstractString, y_axis_label::AbstractString, x_axis_values::Vector{Float64}, y_axis_values::Vector{Float64})
 	ourplot = plot(x_axis_values, [y_axis_values], label=[y_axis_label], lw=[1])
 	plot!(ourplot, legend=:outerbottom, legendcolumns=2)
 	# Note: This function is only for plotting things where the x-axis values are in [0, 1].
 	xlims!(ourplot, 0, 1)
-	title!(ourplot, title_name)
+	# Construct the multi-line title
+	plot_title = temp_metadata.distribution_name * "\nq target: " * string(temp_metadata.q) * "\nLambda: " * string(metadata.lambda) * "\nNumber of samples: " * string(metadata.num_samples) * "\nNumber of w values: " * string(metadata.num_ws) * "\nNumber of rounds: " * string(metadata.num_rounds)
+	title!(ourplot, plot_title)
 	xlabel!(ourplot, x_axis_label)
 	ylabel!(ourplot, y_axis_label)
 	pathOfThisScript = @__DIR__ # Macro for acquiring directory of this script.
@@ -1277,10 +1291,10 @@ function main()
 	# // (Take the maximum E_{v \sim F}[| \hat{q} - q |] over all q and F.)
 
 	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
-	num_samples = 10
-	num_lambdas = 10
-	num_ws = 20
-	num_rounds = 100
+	num_samples = 1
+	num_lambdas = 2
+	num_ws = 2
+	num_rounds = 1
 	x_axis_values = Vector{Float64}(undef, num_ws)
 	y_axis_values = Vector{Float64}(undef, num_ws)
 	for i in 1:num_lambdas
@@ -1310,7 +1324,10 @@ function main()
 		end
 		# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
 		# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
-		plotXandYandSave("Lambda = " * string(lambda) * ", q = " * string(q), "w", "1 - overallocation error", x_axis_values, y_axis_values)
+		# Create Sim Metadata.
+		simMetadata = SimMetadata(num_samples, lambda, num_ws, num_rounds)
+		simTempMetadata = SimTempMetadata("Two point masses a=0.25, b=0.75, p=0.5", q)
+		plotXandYandSave("Lambda = " * string(lambda), simMetadata, simTempMetadata, "w", "1 - overallocation error", x_axis_values, y_axis_values)
 	end
 
 
