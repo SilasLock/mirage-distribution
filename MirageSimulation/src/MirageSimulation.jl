@@ -1291,10 +1291,10 @@ function main()
 	# // (Take the maximum E_{v \sim F}[| \hat{q} - q |] over all q and F.)
 
 	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
-	num_samples = 1
-	num_lambdas = 2
-	num_ws = 2
-	num_rounds = 1
+	num_samples = 1000
+	num_lambdas = 3
+	num_ws = 10
+	num_rounds = 100
 	x_axis_values = Vector{Float64}(undef, num_ws)
 	y_axis_values = Vector{Float64}(undef, num_ws)
 	for i in 1:num_lambdas
