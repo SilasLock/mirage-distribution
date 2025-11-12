@@ -1290,92 +1290,94 @@ function main()
 	# Plot 1 - E_{v \sim F}[| \hat{q} - q |] that we observe from the simulation
 	# // (Take the maximum E_{v \sim F}[| \hat{q} - q |] over all q and F.)
 
-	# if (false)
-	# 	# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
-	# 	num_samples = 1000
-	# 	num_lambdas = 3
-	# 	num_ws = 10
-	# 	num_rounds = 100
-	# 	x_axis_values = Vector{Float64}(undef, num_ws)
-	# 	y_axis_values = Vector{Float64}(undef, num_ws)
-	# 	for i in 1:num_lambdas
-	# 		@assert num_lambdas > 1
-	# 		@assert num_ws > 1
-	# 		temp_x::Float64 = (i - 1) / (num_lambdas - 1)
-	# 		lambda::Float64 = Inf
-	# 		if (temp_x < 1.0)
-	# 			lambda = temp_x / (1.0 - temp_x)
-	# 		end
-	# 		for j in 1:num_ws
-	# 			w = (j - 1) / (num_ws - 1)
-	# 			# TODO: Search for the worst-case distribution F and the worst-case q.
-	# 			# valueCDF = betaCDF(2.0, 10.0)
-	# 			valueCDF = twoPointMassesCDF(0.25, 0.75, 0.5)
-	# 			nonzerotypes = 90
-	# 			true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
-	# 			# Fix parameters q and w at the start.
-	# 			q = 0.6
-	# 			# @profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-	# 			sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-	# 			sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-	# 			# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
-	# 			y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
-	# 			x_axis_values[j] = w
-	# 			y_axis_values[j] = y_axis_datum
-	# 		end
-	# 		# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
-	# 		# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
-	# 		# Create Sim Metadata.
-	# 		simMetadata = SimMetadata(num_samples, lambda, num_ws, num_rounds)
-	# 		simTempMetadata = SimTempMetadata("Two point masses a=0.25, b=0.75, p=0.5", q)
-	# 		plotXandYandSave("Lambda = " * string(lambda), simMetadata, simTempMetadata, "w", "1 - overallocation error", x_axis_values, y_axis_values)
-	# 	end
-	# end
-
-	concentrations = 10
-	for kappa in 2:concentrations
-		for alpha in 1:(kappa - 1)
-			beta = kappa - alpha
-			num_samples = 1000
-			num_lambdas = 3
-			num_ws = 10
-			num_rounds = 100
-			x_axis_values = Vector{Float64}(undef, num_ws)
-			y_axis_values = Vector{Float64}(undef, num_ws)
-			for i in 1:num_lambdas
-				@assert num_lambdas > 1
-				@assert num_ws > 1
-				temp_x::Float64 = (i - 1) / (num_lambdas - 1)
-				lambda::Float64 = Inf
-				if (temp_x < 1.0)
-					lambda = temp_x / (1.0 - temp_x)
-				end
-				for j in 1:num_ws
-					w = (j - 1) / (num_ws - 1)
-					# TODO: Search for the worst-case distribution F and the worst-case q.
-					valueCDF = betaCDF(Float64(alpha), Float64(beta))
-					# valueCDF = twoPointMassesCDF(0.25, 0.75, 0.5)
-					nonzerotypes = 90
-					true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
-					# Fix parameters q and w at the start.
-					q = 0.6
-					# @profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-					sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-					sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
-					# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
-					y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
-					x_axis_values[j] = w
-					y_axis_values[j] = y_axis_datum
-				end
-				# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
-				# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
-				# Create Sim Metadata.
-				simMetadata = SimMetadata(num_samples, lambda, num_ws, num_rounds)
-				simTempMetadata = SimTempMetadata("Beta distribution: alpha = " * string(alpha) * " beta = " * string(beta), q)
-				plotXandYandSave("Lambda = " * string(lambda) * " kappa = " * string(kappa) * " alpha = " * string(alpha), simMetadata, simTempMetadata, "w", "1 - overallocation error", x_axis_values, y_axis_values)
+	if (true)
+		# TODO: Currently this glitches out for lambda = +inf! Why? Shouldn't the code be robust to BR agents?
+		num_samples = 1000
+		num_lambdas = 3
+		num_ws = 10
+		num_rounds = 100
+		x_axis_values = Vector{Float64}(undef, num_ws)
+		y_axis_values = Vector{Float64}(undef, num_ws)
+		for i in 1:num_lambdas
+			@assert num_lambdas > 1
+			@assert num_ws > 1
+			temp_x::Float64 = (i - 1) / (num_lambdas - 1)
+			lambda::Float64 = Inf
+			if (temp_x < 1.0)
+				lambda = temp_x / (1.0 - temp_x)
 			end
+			for j in 1:num_ws
+				w = (j - 1) / (num_ws - 1)
+				# TODO: Search for the worst-case distribution F and the worst-case q.
+				# valueCDF = betaCDF(2.0, 10.0)
+				# valueCDF = twoPointMassesCDF(0.25, 0.75, 0.5)
+				valueCDF = pointMassCDF(0.75)
+				nonzerotypes = 90
+				true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+				# Fix parameters q and w at the start.
+				q = 0.6
+				# @profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+				sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+				sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+				# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
+				y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
+				x_axis_values[j] = w
+				y_axis_values[j] = y_axis_datum
+			end
+			# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
+			# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
+			# Create Sim Metadata.
+			simMetadata = SimMetadata(num_samples, lambda, num_ws, num_rounds)
+			# simTempMetadata = SimTempMetadata("Two point masses a=0.25, b=0.75, p=0.5", q)
+			simTempMetadata = SimTempMetadata("Point mass at 0.75", q)
+			plotXandYandSave("Lambda = " * string(lambda), simMetadata, simTempMetadata, "w", "1 - overallocation error", x_axis_values, y_axis_values)
 		end
 	end
+
+	# concentrations = 10
+	# for kappa in 2:concentrations
+	# 	for alpha in 1:(kappa - 1)
+	# 		beta = kappa - alpha
+	# 		num_samples = 1000
+	# 		num_lambdas = 3
+	# 		num_ws = 10
+	# 		num_rounds = 100
+	# 		x_axis_values = Vector{Float64}(undef, num_ws)
+	# 		y_axis_values = Vector{Float64}(undef, num_ws)
+	# 		for i in 1:num_lambdas
+	# 			@assert num_lambdas > 1
+	# 			@assert num_ws > 1
+	# 			temp_x::Float64 = (i - 1) / (num_lambdas - 1)
+	# 			lambda::Float64 = Inf
+	# 			if (temp_x < 1.0)
+	# 				lambda = temp_x / (1.0 - temp_x)
+	# 			end
+	# 			for j in 1:num_ws
+	# 				w = (j - 1) / (num_ws - 1)
+	# 				# TODO: Search for the worst-case distribution F and the worst-case q.
+	# 				valueCDF = betaCDF(Float64(alpha), Float64(beta))
+	# 				# valueCDF = twoPointMassesCDF(0.25, 0.75, 0.5)
+	# 				nonzerotypes = 90
+	# 				true_cdf_values = valueCDF.(collect(0:nonzerotypes) ./ nonzerotypes)
+	# 				# Fix parameters q and w at the start.
+	# 				q = 0.6
+	# 				# @profile sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+	# 				sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+	# 				sigmoid_summary = sigmoidEstimationProcedure(true_cdf_values, q, w, lambda, num_samples, num_rounds)
+	# 				# y_axis_datum = 1.0 - sigmoid_summary.average_inference_error
+	# 				y_axis_datum = 1.0 - sigmoid_summary.average_overallocation_probability
+	# 				x_axis_values[j] = w
+	# 				y_axis_values[j] = y_axis_datum
+	# 			end
+	# 			# plotXandY("A graph", "w", "1 - E[| \\hat{q} - q |]", x_axis_values, y_axis_values)
+	# 			# plotXandY("A graph", "w", "1 - overallocation error", x_axis_values, y_axis_values)
+	# 			# Create Sim Metadata.
+	# 			simMetadata = SimMetadata(num_samples, lambda, num_ws, num_rounds)
+	# 			simTempMetadata = SimTempMetadata("Beta distribution: alpha = " * string(alpha) * " beta = " * string(beta), q)
+	# 			plotXandYandSave("Lambda = " * string(lambda) * " kappa = " * string(kappa) * " alpha = " * string(alpha), simMetadata, simTempMetadata, "w", "1 - overallocation error", x_axis_values, y_axis_values)
+	# 		end
+	# 	end
+	# end
 
 
 	x = identityDashboard
